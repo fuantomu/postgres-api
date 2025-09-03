@@ -1,0 +1,5 @@
+ckbk
+.env.local
+__pycache__
+*.log
+*.log.*
