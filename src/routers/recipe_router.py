@@ -8,10 +8,11 @@ class Recipe(Router):
         self.router.add_api_route("/", self.add, methods=["POST"])
         self.router.add_api_route("/GetRecipesByIngredient", self.get_recipes_by_ingredient, methods=["GET"], status_code=202)
         
-    def get_recipes_by_ingredient(self, ingredient: str):
+    def get_recipes_by_ingredient(self, id: str = None, ingredient: str = None):
         self.logger.info(f"Received GET request on {self.name} - get_recipes_by_ingredient")
         self.logger.debug(f"Parameters: {ingredient}")
-        return super().redirect_request('GetRecipesByIngredient', ingredient)
+        return super().redirect_request('GetRecipesByIngredient', {"key": "id" if id else "name", "value": id or ingredient})
+        #return super().redirect_request('GetRecipesByIngredient', ingredient)
     
     async def add(self, recipe: RecipeModel) -> str:
         self.logger.info(f"Received POST request on {self.name} - add")

@@ -52,8 +52,9 @@ class RecipeTable(Table):
     def get_recipes_by_ingredient(self, request: str|dict):
         output : list[RecipeModel|None] = []
         try:
-            ingredient_id = self.select("id", [("name","=",request)],"ingredient")[0][0]
-        except:
+            ingredient_id = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])], "ingredient"))[0]["id"]
+        except Exception as e:
+            self.logger.exception(e)
             self.logger.error(f"No ingredient found for '{request}'")
             return []
         recipe_ids = self.select("recipe_id", [("ingredient_id","=",ingredient_id)],"recipeingredient")
