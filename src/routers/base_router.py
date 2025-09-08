@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from fastapi.responses import Response
 from logger.log import get_logger
 from database.database import Database
-from models.exception import handle_exception
+from helper.exception import handle_exception
 
 class Router:
 

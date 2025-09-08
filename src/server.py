@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import uvicorn
 from os import getenv
-from models.exception import handle_exception
+from helper.exception import handle_exception
 import routers
 from logger.log import get_logger
 import logging
