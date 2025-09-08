@@ -12,9 +12,7 @@ class Router:
         self.name = self.__class__.__name__
         self.router = APIRouter()
         self.database = None
-        self.router.add_api_route("/GetAll", self.get_all, methods=["GET"])
         self.router.add_api_route("/", self.get, methods=["GET"])
-        self.router.add_api_route("/Find", self.find, methods=["GET"])
 
     def set_database(self, database : Database):
         self.database = database
@@ -22,18 +20,10 @@ class Router:
     def return_result(self, result=None):
         return result
     
-    def get(self, id: str):
+    def get(self, id: str = None, name: str = None):
         self.logger.info(f"Received GET request on {self.name}")
-        return self.redirect_request('Get', id)
-    
-    def get_all(self):
-        self.logger.info(f"Received GET request on {self.name} - get_all")
-        return self.redirect_request('GetAll', "ALL")
+        return self.redirect_request('Get', {"key": "id" if id else "name", "value": id or name})
 
-    def find(self, name:str):
-        self.logger.info(f"Received GET request on {self.name} - find")
-        self.logger.info(f"Parameters: {name}")
-        return self.redirect_request('Find', name)
     
     def redirect_request(self, _func : str, request: str|dict) -> Response:
         self.logger.info("Redirecting request to database")

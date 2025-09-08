@@ -118,17 +118,11 @@ class Table:
         return self.functions
     
     def get(self, request : str|dict):
-        return self.format_result(self.select("ALL", [("id","=",request)]))
-
-    def find(self, request : str|dict):
-        return self.format_result(self.select("ALL", [("name","=",request)]))
-    
-    def get_all(self, request : str|dict):
-        return self.format_result(self.select(request))
+        if not request["value"]:
+            return self.format_result(self.select("ALL"))
+        return self.format_result(self.select("ALL", [(request["key"],"=",request["value"])]))
     
     functions = {
-        "GetAll" : get_all,
         "Get": get,
-        "Find": find,
         "Add": insert
     }

@@ -39,7 +39,7 @@ class Database:
         if table_class:
             new_table = table_class(self.connection, router)
 
-            if not isinstance(request,str):
+            if not isinstance(request,str) and not isinstance(request,dict):
                 request = new_table.format_request(request.model_dump())
 
             return new_table.get_functions().get(function)(new_table, request)
