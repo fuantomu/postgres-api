@@ -1,6 +1,6 @@
 import psycopg
 from logger.log import get_logger
-from database.structure.initialize import find_table, initialize_tables
+from database.structure.initialize import add_ingredients, find_table, initialize_tables
 
 class Database:
     logger = get_logger("database")
@@ -34,13 +34,40 @@ class Database:
         self.logger.info("Initializing database")
         initialize_tables(self.connection)
 
+    def drop_tables(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public' 
+                AND table_type = 'BASE TABLE';
+            """)
+            tables = cursor.fetchall()
+            cursor.execute("""
+                SELECT conname, conrelid::regclass AS table_from
+                FROM pg_constraint
+                WHERE contype = 'f';
+            """)
+            foreign_keys = cursor.fetchall()
+            for fk in foreign_keys:
+                constraint_name, table_from = fk
+                self.logger.debug(f"Dropping foreign key constraint: {constraint_name} on table {table_from}")
+                cursor.execute(f"ALTER TABLE {table_from} DROP CONSTRAINT {constraint_name};")
+
+            for table in tables:
+                table_name = table[0]
+                self.logger.debug(f"Dropping table: {table_name}")
+                cursor.execute(f"DROP TABLE IF EXISTS {table_name} CASCADE;")
+            self.connection.commit()
+
+    def add_test_data(self) -> None:
+        self.logger.debug("Adding test data")
+        add_ingredients(self.connection)
+
     def manage_request(self, function: str, router : str, request : str|dict):
         table_class = find_table(f"{router}table")
         if table_class:
             new_table = table_class(self.connection, router)
-
-            if not isinstance(request,str) and not isinstance(request,dict):
-                request = new_table.format_request(request.model_dump())
-
-            return new_table.get_functions().get(function)(new_table, request)
+            new_table.update_functions()
+            return new_table.get_functions()[function](request)
             

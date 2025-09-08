@@ -15,6 +15,7 @@ class Server:
         self.port = int(getenv("SERVICE_PORT"))
         self.app = FastAPI(title="Cookbook",version="0.1",contact={"name":"fuantomu","email":"fuantomuw@gmail.com"},docs_url='/',root_path="/api")
         self.routers = {}
+        self.database = Database(getenv("POSTGRES_HOST"), getenv("POSTGRES_USERNAME"), getenv("POSTGRES_PASSWORD"), getenv("POSTGRES_DATABASE"))
 
     def initialize_logging(self):
         logging.getLogger("asyncio").propagate = False
@@ -30,12 +31,19 @@ class Server:
             self.app.include_router(value.router, prefix=f"/{key}", tags=[key])
 
     def initialize_database(self):
-        self.database = Database(getenv("POSTGRES_HOST"), getenv("POSTGRES_USERNAME"), getenv("POSTGRES_PASSWORD"), getenv("POSTGRES_DATABASE"))
         with self.database as d:
             d.initialize()
         
         for _,router in self.routers.items():
             router.database = self.database
+
+    def clean_database(self):
+        with self.database as d:
+            d.drop_tables()
+
+    def test_data(self):
+        with self.database as d:
+            d.add_test_data()
 
     def run(self):
         self.logger.info(f"Running on port {self.port}")
@@ -47,7 +55,9 @@ if __name__ == '__main__':
     server.initialize_endpoints()
     server.initialize_logging()
     try:
+        server.clean_database()
         server.initialize_database()
+        server.test_data()
     except Exception as e:
         server.logger.error(handle_exception(e))
         server.logger.info("Exiting program")

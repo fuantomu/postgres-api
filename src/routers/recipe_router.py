@@ -10,10 +10,13 @@ class Recipe(Router):
         
     def get_recipes_by_ingredient(self, ingredient: str):
         self.logger.info(f"Received GET request on {self.name} - get_recipes_by_ingredient")
-        self.logger.info(f"Parameters: {ingredient}")
+        self.logger.debug(f"Parameters: {ingredient}")
         return super().redirect_request('GetRecipesByIngredient', ingredient)
     
-    async def add(self, recipe: RecipeModel):
+    async def add(self, recipe: RecipeModel) -> str:
         self.logger.info(f"Received POST request on {self.name} - add")
-        self.logger.info(f"Parameters: {recipe}")
-        return super().redirect_request(recipe)
+        self.logger.debug(f"Parameters: {recipe}")
+        return super().redirect_request('Add', recipe.model_dump())
+    
+    def get(self, id: str = None, name: str = None) -> list[RecipeModel]:
+        return super().get(id=id, name= name)

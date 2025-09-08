@@ -25,3 +25,21 @@ def find_table(table_name: str):
         if _class.__name__.lower() == table_name.lower():
             return _class
     return None
+
+def add_ingredients(connection: psycopg.Connection):
+    ingredient_table = tables.IngredientTable(connection, "Ingredient")
+    ingredients = [{
+        "name": "Ingredient1",
+        "description": "TestIngredient1"
+    },{
+        "name": "Ingredient2",
+        "description": "TestIngredient2"
+    },{
+        "name": "Ingredient3",
+        "description": "TestIngredient3"
+    },{
+        "name": "Ingredient4",
+        "description": "TestIngredient4"
+    }]
+    for ingredient in ingredients:
+        ingredient_table.insert(ingredient)

@@ -7,8 +7,10 @@ class Ingredient(Router):
         super().__init__()
         self.router.add_api_route("/", self.add, methods=["POST"], status_code=201)
         
-    
-    async def add(self, ingredient: IngredientModel):
+    async def add(self, ingredient: IngredientModel)-> str:
         self.logger.info(f"Received POST request on {self.name} - add")
-        self.logger.info(f"Parameters: {ingredient}")
-        return super().redirect_request('Add', ingredient)
+        self.logger.debug(f"Parameters: {ingredient}")
+        return super().redirect_request('Add', ingredient.model_dump())
+    
+    def get(self, id: str = None, name: str = None) -> list[IngredientModel]:
+        return super().get(id=id, name= name)

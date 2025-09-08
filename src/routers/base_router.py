@@ -27,9 +27,9 @@ class Router:
     
     def redirect_request(self, _func : str, request: str|dict) -> Response:
         self.logger.info("Redirecting request to database")
-        with self.database as _:
+        with self.database as database:
             try:
-                result = self.database.manage_request(_func, self.name, request)
+                result = database.manage_request(_func, self.name, request)
                 return self.return_result(result)
             except Exception as e:
                 self.logger.exception(e)
