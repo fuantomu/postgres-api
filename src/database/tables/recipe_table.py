@@ -62,11 +62,50 @@ class RecipeTable(Table):
             output.extend(self.get({"key": "id", "value": str(recipe_id[0])}))
 
         return output
+
+    def add_ingredient(self, request: dict):
+        try:
+            recipe_id = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])], "recipe"))[0]["id"]
+        except Exception as e:
+            self.logger.exception(e)
+            self.logger.error(f"No recipe found for '{request}'")
+            return []
+
+        for ingredient in request["ingredients"].copy() :
+            result = self.select("id", [("name","=",ingredient["name"])],"ingredient")
+            if result:
+                ingredient["id"] = result[0][0]
+            else:
+                request["ingredients"].remove(ingredient)
+                self.logger.error(f"No ingredient found for '{ingredient['name']}'")
+
+        if len(request["ingredients"]) == 0:
+            return "No ingredients found for given request"
+        
+        existing_ingredients = self.select("ingredient_id", [("recipe_id","=",recipe_id)],"recipeingredient")
+        for new_ingredient in request["ingredients"].copy():
+            for existing_ingredient in existing_ingredients:
+                if new_ingredient["id"] == existing_ingredient[0]:
+                    request["ingredients"].remove(new_ingredient)
+                    self.logger.debug(f"Removing duplicate ingredient '{new_ingredient['id']}'")
+                    
+        if len(request["ingredients"]) == 0:
+            return "Cannot add any of the given ingredients (duplicate or non-existing)"
+
+        recipe_ingredient_request = {
+            "recipe_id": recipe_id,
+            "ingredients": request["ingredients"]
+        }
+        return RecipeIngredientTable.insert(self, recipe_ingredient_request)
+        
+
+        
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")
         self.set_function("Add", self.insert)
         self.set_function("Get", self.get)
         self.set_function("GetRecipesByIngredient", self.get_recipes_by_ingredient)
+        self.set_function("AddIngredient", self.add_ingredient)
 
     
 

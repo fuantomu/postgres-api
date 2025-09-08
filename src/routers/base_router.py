@@ -12,7 +12,7 @@ class Router:
         self.name = self.__class__.__name__
         self.router = APIRouter()
         self.database = None
-        self.router.add_api_route("/", self.get, methods=["GET"])
+        self.router.add_api_route("/", self.get, methods=["GET"], status_code=202)
 
     def set_database(self, database : Database):
         self.database = database
