@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from uuid import UUID, uuid4
 
 class Ingredient:
     def __init__(self, name: str, description: str, alias: list[str] | None = None):
@@ -8,7 +7,6 @@ class Ingredient:
         self.alias = alias
 
 class IngredientModel(BaseModel):
-    id: UUID = uuid4()
     name: str
     description: str
     alias: list[str] | None = None
