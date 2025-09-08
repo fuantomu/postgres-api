@@ -6,7 +6,6 @@ class Table:
     logger = get_logger("database")
 
     columns = {}
-    functions = {}
 
     def __init__(self, connection: psycopg.Connection, name: str):
         self.connection = connection
@@ -117,4 +116,19 @@ class Table:
     
     def get_functions(self) -> dict:
         return self.functions
-        
+    
+    def get(self, request : str|dict):
+        return self.format_result(self.select("ALL", [("id","=",request)]))
+
+    def find(self, request : str|dict):
+        return self.format_result(self.select("ALL", [("name","=",request)]))
+    
+    def get_all(self, request : str|dict):
+        return self.format_result(self.select(request))
+    
+    functions = {
+        "GetAll" : get_all,
+        "Get": get,
+        "Find": find,
+        "Add": insert
+    }
