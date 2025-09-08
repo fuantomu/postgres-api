@@ -34,11 +34,13 @@ class Database:
         self.logger.info("Initializing database")
         initialize_tables(self.connection)
 
-    def manage_request(self, router : str, request):
+    def manage_request(self, function: str, router : str, request : str|dict):
         table_class = find_table(f"{router}table")
-
         if table_class:
             new_table = table_class(self.connection, router)
-            request = new_table.format_request(request.model_dump())
-            new_table.insert(request)
+
+            if not isinstance(request,str):
+                request = new_table.format_request(request.model_dump())
+
+            return new_table.get_functions().get(function)(new_table, request)
             

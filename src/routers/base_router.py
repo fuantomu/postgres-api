@@ -12,21 +12,36 @@ class Router:
         self.name = self.__class__.__name__
         self.router = APIRouter()
         self.database = None
+        self.router.add_api_route("/GetAll", self.get_all, methods=["GET"])
+        self.router.add_api_route("/", self.get, methods=["GET"])
+        self.router.add_api_route("/Find", self.find, methods=["GET"])
 
     def set_database(self, database : Database):
         self.database = database
         
-    def get(self):
-        return Response(status_code=200)
-
-    def post(self):
-        return Response(status_code=201)
+    def return_result(self, result=None):
+        return result
     
-    def redirect_request(self, request) -> None:
+    def get(self, id: str):
+        self.logger.info(f"Received GET request on {self.name}")
+        return self.redirect_request('Get', id)
+    
+    def get_all(self):
+        self.logger.info(f"Received GET request on {self.name} - get_all")
+        return self.redirect_request('GetAll', "ALL")
+
+    def find(self, name:str):
+        self.logger.info(f"Received GET request on {self.name} - find")
+        self.logger.info(f"Parameters: {name}")
+        return self.redirect_request('Find', name)
+    
+    def redirect_request(self, _func : str, request: str|dict) -> Response:
         self.logger.info("Redirecting request to database")
         with self.database as _:
             try:
-                self.database.manage_request(self.name, request)
-                return self.post()
+                result = self.database.manage_request(_func, self.name, request)
+                return self.return_result(result)
             except Exception as e:
+                self.logger.exception(e)
                 return Response(status_code=400, content = handle_exception(e), media_type="text/plain")
+                

@@ -6,6 +6,7 @@ class Table:
     logger = get_logger("database")
 
     columns = {}
+    functions = {}
 
     def __init__(self, connection: psycopg.Connection, name: str):
         self.connection = connection
@@ -52,13 +53,41 @@ class Table:
 
         with self.connection.cursor() as cursor:
             try:
-                cursor.execute(
-                    f"""
-                    INSERT INTO {self.name} ({",".join(request.keys())})
-                    VALUES {str(tuple(request.values()))}
-                    """
-                )
+                query = psycopg.sql.SQL("INSERT INTO {table} ({rows}) VALUES ({fields})").format(fields=psycopg.sql.SQL(", ").join([psycopg.sql.Placeholder(entry) for entry in request.keys()]), rows=psycopg.sql.SQL(",").join([psycopg.sql.Identifier(entry) for entry in request.keys()]), table=psycopg.sql.Identifier(self.name))
+                cursor.execute(query, request)
                 self.connection.commit()
+            except psycopg.errors.UniqueViolation as e:
+                self.logger.error(e)
+                raise
+    
+    def select(self, request: str|list[str], where: list[tuple] = None) -> list[psycopg.rows.Row]:
+        if not self.exists():
+            self.logger.error(f"Table '{self.name}' does not exist")
+            return
+        
+        self.logger.debug(f"Trying to select {request} from '{self.name}'")
+
+        with self.connection.cursor() as cursor:
+            try:
+                if isinstance(request,str):
+                    if request == "ALL":
+                        query = psycopg.sql.SQL("SELECT * FROM {table}").format(table=psycopg.sql.Identifier(self.name))
+                    else:
+                        query = psycopg.sql.SQL("SELECT {field} FROM {table}").format(field=psycopg.sql.Identifier(request), table=psycopg.sql.Identifier(self.name))
+                else:
+                    query = psycopg.sql.SQL("SELECT {fields} FROM {table}").format(fields=psycopg.sql.SQL(",").join([psycopg.sql.Identifier(entry) for entry in request]), table=psycopg.sql.Identifier(self.name))
+                
+                if where:
+                    query += psycopg.sql.SQL(" WHERE ")
+                    params = {}
+                    for item in where:
+                        query += psycopg.sql.SQL(" AND ").join([psycopg.sql.SQL("{field} {equal} {value}").format(field=psycopg.sql.Identifier(item[0]),equal=psycopg.sql.SQL("=") if item[1] == "=" else psycopg.sql.SQL("like"),value=psycopg.sql.Placeholder(item[0]))])
+                        params[item[0]] = item[2]
+                    cursor.execute(query, params)
+                    return cursor.fetchall()
+                else:
+                    cursor.execute(query)
+                    return cursor.fetchall()
             except psycopg.errors.UniqueViolation as e:
                 self.logger.error(e)
                 raise
@@ -71,4 +100,21 @@ class Table:
             if formatted_request[key] == "":
                 formatted_request.pop(key)
         return formatted_request
+    
+    def format_result(self, result: list[tuple], columns:list[str] = None) -> list[dict]:
+        output = []
+        if not columns:
+            columns = list(self.columns.keys())
+        for idx in range(len(result)):
+            temp = {}
+            for col in range(len(columns)):
+                temp[columns[col]] = result[idx][col]
+            output.append(temp)
+        return output
+    
+    def get_columns(self) -> dict:
+        return self.columns
+    
+    def get_functions(self) -> dict:
+        return self.functions
         
