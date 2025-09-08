@@ -12,8 +12,7 @@ class Recipe(Router):
         self.logger.info(f"Received GET request on {self.name} - get_recipes_by_ingredient")
         self.logger.debug(f"Parameters: {ingredient}")
         return super().redirect_request('GetRecipesByIngredient', {"key": "id" if id else "name", "value": id or ingredient})
-        #return super().redirect_request('GetRecipesByIngredient', ingredient)
-    
+
     async def add(self, recipe: RecipeModel) -> str:
         self.logger.info(f"Received POST request on {self.name} - add")
         self.logger.debug(f"Parameters: {recipe}")
