@@ -48,11 +48,24 @@ class RecipeTable(Table):
                 })
 
         return output
+    
+    def get_recipes_by_ingredient(self, request: str|dict):
+        output : list[RecipeModel|None] = []
+        try:
+            ingredient_id = self.select("id", [("name","=",request)],"ingredient")[0][0]
+        except:
+            self.logger.error(f"No ingredient found for '{request}'")
+            return []
+        recipe_ids = self.select("recipe_id", [("ingredient_id","=",ingredient_id)],"recipeingredient")
+        for recipe_id in recipe_ids:
+            output.extend(self.get({"key": "id", "value": str(recipe_id[0])}))
 
+        return output
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")
         self.set_function("Add", self.insert)
         self.set_function("Get", self.get)
+        self.set_function("GetRecipesByIngredient", self.get_recipes_by_ingredient)
 
     
 
