@@ -43,3 +43,43 @@ def add_ingredients(connection: psycopg.Connection):
     }]
     for ingredient in ingredients:
         ingredient_table.insert(ingredient)
+
+def add_recipes(connection: psycopg.Connection):
+    recipes_table = tables.RecipeTable(connection, "Recipe")
+    recipes = [{
+        "name": "Recipe1",
+        "description": "TestRecipe1",
+        "ingredients": [{
+            "name": "Ingredient1",
+            "quantity": "5"
+        },{
+            "name": "Ingredient4",
+            "quantity": "3"
+        }]
+    },{
+        "name": "Recipe2",
+        "description": "TestRecipe2",
+        "ingredients": [{
+            "name": "Ingredient2",
+            "quantity": "2g"
+        },{
+            "name": "Ingredient3",
+            "quantity": "6g"
+        },{
+            "name": "Ingredient4",
+            "quantity": "34g"
+        }]
+    },{
+        "name": "Recipe3",
+        "description": "TestRecipe3",
+        "ingredients": [{
+            "name": "Ingredient1",
+            "quantity": "20g"
+        },{
+            "name": "Ingredient3",
+            "quantity": "12g"
+        }]
+    }]
+    recipe_ids = []
+    for recipe in recipes:
+        recipe_ids.append(recipes_table.insert(recipe))

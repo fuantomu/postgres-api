@@ -1,6 +1,6 @@
 import psycopg
 from logger.log import get_logger
-from database.structure.initialize import add_ingredients, find_table, initialize_tables
+from database.structure.initialize import add_ingredients, add_recipes, find_table, initialize_tables
 
 class Database:
     logger = get_logger("database")
@@ -63,6 +63,7 @@ class Database:
     def add_test_data(self) -> None:
         self.logger.debug("Adding test data")
         add_ingredients(self.connection)
+        add_recipes(self.connection)
 
     def manage_request(self, function: str, router : str, request : str|dict):
         table_class = find_table(f"{router}table")
