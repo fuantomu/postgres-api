@@ -23,6 +23,9 @@ class Router:
     def get(self, id: str = None, name: str = None):
         self.logger.info(f"Received GET request on {self.name}")
         return self.redirect_request('Get', {"key": "id" if id else "name", "value": id or name})
+    
+    def missing_parameters(self, parameters:list[str]) -> Response:
+        return Response(status_code=400, content= f"Missing one or more required parameters in: '{",".join(parameters)}'", media_type="text/plain")
 
     
     def redirect_request(self, _func : str, request: str|dict) -> Response:
