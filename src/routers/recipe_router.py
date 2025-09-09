@@ -20,6 +20,7 @@ class Recipe(Router):
     async def add(self, recipe: RecipeModel) -> str:
         self.logger.info(f"Received POST request on {self.name} - add")
         self.logger.debug(f"Parameters: {recipe}")
+        recipe.__delattr__("id")
         return super().redirect_request('Add', recipe.model_dump())
     
     async def add_ingredient(self, ingredients: list[RecipeIngredientModel], id: str = None, recipe: str = None):
