@@ -11,7 +11,7 @@ class Recipe(Router):
         
     def get_recipes_by_ingredient(self, id: str = None, ingredient: str = None):
         self.logger.info(f"Received GET request on {self.name} - get_recipes_by_ingredient")
-        self.logger.debug(f"Parameters: {ingredient}")
+        self.logger.debug(f"Parameters: {ingredient or id}")
         return super().redirect_request('GetRecipesByIngredient', {"key": "id" if id else "name", "value": id or ingredient})
 
     async def add(self, recipe: RecipeModel) -> str:
@@ -21,7 +21,7 @@ class Recipe(Router):
     
     async def add_ingredient(self, ingredients: list[dict], id: str = None, recipe: str = None):
         self.logger.info(f"Received POST request on {self.name} - add_ingredient")
-        self.logger.debug(f"Parameters: {recipe} - {ingredients}")
+        self.logger.debug(f"Parameters: {recipe or id} - {ingredients}")
         return super().redirect_request('AddIngredient', {"key": "id" if id else "name", "value": id or recipe, "ingredients": ingredients})
     
     def get(self, id: str = None, name: str = None) -> list[RecipeModel]:
