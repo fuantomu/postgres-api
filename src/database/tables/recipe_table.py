@@ -1,6 +1,5 @@
 from database.tables.recipe_ingredient_table import RecipeIngredientTable
 from database.tables.table import Table
-from models.recipe_ingredients_model import RecipeIngredientModel
 from models.recipe_model import RecipeModel
 
 class RecipeTable(Table):
@@ -54,10 +53,8 @@ class RecipeTable(Table):
         output : list[RecipeModel|None] = []
         try:
             ingredient_id = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])], "ingredient"))[0]["id"]
-        except Exception as e:
-            self.logger.exception(e)
-            self.logger.error(f"No ingredient found for '{request}'")
-            return []
+        except IndexError:
+            raise Exception(f"No ingredient found for '{request['value']}'")
         recipe_ids = self.select("recipe_id", [("ingredient_id","=",ingredient_id)],"recipeingredient")
         for recipe_id in recipe_ids:
             output.extend(self.get({"key": "id", "value": str(recipe_id[0])}))
@@ -67,8 +64,7 @@ class RecipeTable(Table):
     def add_ingredient(self, request: dict):
         try:
             recipe_id = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])], "recipe"))[0]["id"]
-        except Exception as e:
-            self.logger.exception(e)
+        except IndexError:
             raise Exception(f"No recipe found for '{request['value']}'")
 
         for ingredient in request["ingredients"].copy() :

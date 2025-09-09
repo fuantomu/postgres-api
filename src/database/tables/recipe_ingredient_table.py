@@ -32,8 +32,8 @@ class RecipeIngredientTable(Table):
                     temp_request["ingredient_id"] = self.select("id", [("name","=",ingredient["name"])], "ingredient")[0][0]
                 else:
                     temp_request["ingredient_id"] = self.select("id", [("id","=",ingredient["id"])], "ingredient")[0][0]
-            except:
-                self.logger.error(f"Ingredient {ingredient} does not exist")
+            except IndexError:
+                raise Exception(f"Ingredient {ingredient} does not exist")
             
             if temp_request.get("ingredient_id"):
                 recipe_ingredient_requests.append(temp_request)

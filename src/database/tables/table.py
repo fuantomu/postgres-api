@@ -53,8 +53,7 @@ class Table:
             table_name = self.name
 
         if not self.exists(table_name=table_name):
-            self.logger.error(f"Table '{table_name}' does not exist")
-            return
+            raise Exception(f"Table '{table_name}' does not exist")
         
         self.logger.debug(f"Trying to insert {request} into '{table_name}'")
 
@@ -73,8 +72,7 @@ class Table:
             table_name = self.name
 
         if not self.exists(table_name=table_name):
-            self.logger.error(f"Table '{table_name}' does not exist")
-            return
+            raise Exception(f"Table '{table_name}' does not exist")
         
         self.logger.debug(f"Trying to select {request} from '{table_name}'")
 
@@ -101,7 +99,7 @@ class Table:
                     cursor.execute(query)
                     return cursor.fetchall()
             except Exception as e:
-                self.logger.error(e)
+                self.logger.exception(e)
                 raise
 
     def delete(self, request: str|list[tuple], table_name : str = None):
@@ -109,8 +107,7 @@ class Table:
             table_name = self.name
 
         if not self.exists(table_name=table_name):
-            self.logger.error(f"Table '{table_name}' does not exist")
-            return
+            raise Exception(f"Table '{table_name}' does not exist")
         
         self.logger.debug(f"Trying to delete {request} from '{table_name}'")
 
@@ -136,7 +133,7 @@ class Table:
             columns = list(self.columns.keys())
             try:
                 columns.remove("PRIMARY KEY")
-            except Exception as e:
+            except Exception:
                 pass
         for idx in range(len(result)):
             temp = {}
