@@ -64,8 +64,7 @@ class Table:
                 self.connection.commit()
                 return cursor.fetchone()[0]
             except psycopg.errors.UniqueViolation as e:
-                self.logger.error(e)
-                raise
+                raise e
     
     def select(self, request: str|list[str], where: list[tuple] = None, table_name : str = None) -> list[psycopg.rows.Row]:
         if not table_name:
