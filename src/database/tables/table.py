@@ -1,3 +1,4 @@
+from uuid import UUID
 import psycopg
 from database.helper.statement import generate_statement
 from logger.log import get_logger
@@ -137,7 +138,10 @@ class Table:
         for idx in range(len(result)):
             temp = {}
             for col in range(len(columns)):
-                temp[columns[col]] = result[idx][col]
+                if isinstance(result[idx][col], UUID):
+                    temp[columns[col]] = str(result[idx][col])
+                else:
+                    temp[columns[col]] = result[idx][col]
             output.append(temp)
         return output
     
