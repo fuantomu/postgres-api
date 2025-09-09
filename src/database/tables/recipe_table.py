@@ -1,5 +1,6 @@
 from database.tables.recipe_ingredient_table import RecipeIngredientTable
 from database.tables.table import Table
+from models.recipe_ingredients_model import RecipeIngredientModel
 from models.recipe_model import RecipeModel
 
 class RecipeTable(Table):
@@ -68,8 +69,7 @@ class RecipeTable(Table):
             recipe_id = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])], "recipe"))[0]["id"]
         except Exception as e:
             self.logger.exception(e)
-            self.logger.error(f"No recipe found for '{request}'")
-            return []
+            raise Exception(f"No recipe found for '{request['value']}'")
 
         for ingredient in request["ingredients"].copy() :
             result = self.select("id", [("name","=",ingredient["name"])],"ingredient")
@@ -80,7 +80,7 @@ class RecipeTable(Table):
                 self.logger.error(f"No ingredient found for '{ingredient['name']}'")
 
         if len(request["ingredients"]) == 0:
-            return "No ingredients found for given request"
+            raise Exception("No ingredients found for given request") 
         
         existing_ingredients = self.select("ingredient_id", [("recipe_id","=",recipe_id)],"recipeingredient")
         for new_ingredient in request["ingredients"].copy():
@@ -90,7 +90,7 @@ class RecipeTable(Table):
                     self.logger.debug(f"Removing duplicate ingredient '{new_ingredient['id']}'")
                     
         if len(request["ingredients"]) == 0:
-            return "Cannot add any of the given ingredients (duplicate or non-existing)"
+            raise Exception("Cannot add any of the given ingredients (duplicate or non-existing)") 
 
         recipe_ingredient_request = {
             "recipe_id": recipe_id,

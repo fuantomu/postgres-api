@@ -27,7 +27,7 @@ class Recipe(Router):
         self.logger.debug(f"Parameters: {recipe or id} - {ingredients}")
         if not id and not recipe:
             return super().missing_parameters(["id","recipe"])
-        return super().redirect_request('AddIngredient', {"key": "id" if id else "name", "value": id or recipe, "ingredients": ingredients})
+        return super().redirect_request('AddIngredient', {"key": "id" if id else "name", "value": id or recipe, "ingredients": [ingredient.dict() for ingredient in ingredients]})
     
     def get(self, id: str = None, name: str = None) -> list[RecipeModel]:
         return super().get(id=id, name= name)
