@@ -1,12 +1,10 @@
 from pydantic import BaseModel
 
-class Ingredient:
-    def __init__(self, name: str, description: str, alias: list[str] | None = None):
-        self.name = name
-        self.description = description
-        self.alias = alias
-
 class IngredientModel(BaseModel):
+    id: str | None = None
     name: str
     description: str
     alias: list[str] | None = None
+
+class IngredientAliasModel(BaseModel):
+    name: str

@@ -126,6 +126,55 @@ class Table:
             except Exception as e:
                 self.logger.error(e)
                 raise
+
+    def update(self, request: str|list[str], where: list[tuple] = None, table_name : str = None, return_key : str = "id") -> None:
+        if not table_name:
+            table_name = self.name
+
+        if not self.exists(table_name=table_name):
+            raise Exception(f"Table '{table_name}' does not exist")
+        
+        self.logger.debug(f"Trying to update {request} from '{table_name}'")
+
+        with self.connection.cursor() as cursor:
+            try:
+                set_clause = psycopg.sql.SQL(", ").join([
+                    psycopg.sql.SQL("{} = {}").format(
+                        psycopg.sql.Identifier(k),
+                        psycopg.sql.Placeholder(k)
+                    ) for k in request.keys() if k is not "id"
+                ])
+
+                query = psycopg.sql.SQL(
+                    "UPDATE {table} SET {set_clause}"
+                ).format(
+                    table=psycopg.sql.Identifier(table_name),
+                    set_clause=set_clause
+                )
+
+                params = {}
+                for k in request.keys():
+                    if k == "id":
+                        continue
+                    params[k] = request[k]
+                
+                if where:
+                    query += psycopg.sql.SQL(" WHERE ")
+                    
+                    for item in where:
+                        query += psycopg.sql.SQL(" AND ").join([psycopg.sql.SQL("{field} {equal} {value}").format(field=psycopg.sql.Identifier(item[0]),equal=psycopg.sql.SQL("=") if item[1] == "=" else psycopg.sql.SQL("like"),value=psycopg.sql.Placeholder(item[0]))])
+                        params[item[0]] = item[2]
+
+                query += psycopg.sql.SQL(" RETURNING {return_key}").format(
+                    return_key=psycopg.sql.Identifier(return_key)
+                )
+                print(query.as_string(), params)
+                cursor.execute(query,params)
+                cursor.connection.commit()
+                return str(cursor.fetchone()[0])
+            except Exception as e:
+                self.logger.exception(e)
+                raise
     
     def format_result(self, result: list[tuple], columns:list[str] = None) -> list[dict]:
         output = []
