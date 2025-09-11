@@ -35,6 +35,6 @@ class Router:
                 result = database.manage_request(_func, self.name, request)
                 return self.return_result(result)
             except Exception as e:
-                self.logger.error(e)
+                self.logger.exception(e)
                 return Response(status_code=400, content = handle_exception(e), media_type="text/plain")
                 
