@@ -91,7 +91,7 @@ class Table:
                     query += psycopg.sql.SQL(" WHERE ")
                     params = {}
                     for item in where:
-                        query += psycopg.sql.SQL(" AND ").join([psycopg.sql.SQL("{field} {equal} {value}").format(field=psycopg.sql.Identifier(item[0]),equal=psycopg.sql.SQL("=") if item[1] == "=" else psycopg.sql.SQL("like"),value=psycopg.sql.Placeholder(item[0]))])
+                        query += psycopg.sql.SQL(" AND ").join([psycopg.sql.SQL("{field} {equal} {value}").format(field=psycopg.sql.Identifier(item[0]),equal=psycopg.sql.SQL(item[1]),value=psycopg.sql.Placeholder(item[0]))])
                         params[item[0]] = item[2]
                     cursor.execute(query, params)
                     return cursor.fetchall()

@@ -21,5 +21,5 @@ class Ingredient(Router):
             return super().missing_parameters(["id","name"])
         return super().redirect_request('Alias', {"key": "id" if id else "name", "value": id or name, "alias": [_alias.model_dump() for _alias in alias]})
     
-    def get(self, id: str = None, name: str = None) -> list[IngredientModel]:
-        return super().get(id=id, name= name)
+    def get(self, id: str = None, name: str = None, include_alias : bool = True) -> list[IngredientModel]:
+        return super().redirect_request('Get', {"key": "id" if id else "name", "value": id or name, "include_alias": include_alias})
