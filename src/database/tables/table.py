@@ -168,7 +168,6 @@ class Table:
                 query += psycopg.sql.SQL(" RETURNING {return_key}").format(
                     return_key=psycopg.sql.Identifier(return_key)
                 )
-                print(query.as_string(), params)
                 cursor.execute(query,params)
                 cursor.connection.commit()
                 return str(cursor.fetchone()[0])
@@ -178,7 +177,6 @@ class Table:
     
     def format_result(self, result: list[tuple], columns:list[str] = None) -> list[dict]:
         output = []
-        print(result)
         if not columns:
             columns = list(self.columns.keys())
             try:
