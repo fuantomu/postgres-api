@@ -51,11 +51,21 @@ class RecipeTable(Table):
     
     def get_recipes_by_ingredient(self, request: str|dict):
         output : list[RecipeModel|None] = []
+        recipe_ids = []
+        if request["include_alias"] and request['key'] == "name":
+            ingredients = self.format_result(self.select("ALL", [('alias',"@>",[request["value"]])], "ingredient"))
+            for ingredient in ingredients:
+                recipe_ids.extend(self.select("recipe_id", [("ingredient_id","=",ingredient["id"])],"recipeingredient"))            
+
         try:
-            ingredient_id = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])], "ingredient"))[0]["id"]
+            ingredient = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])], "ingredient"))[0]
         except IndexError:
-            raise Exception(f"No ingredient found for '{request['value']}'")
-        recipe_ids = self.select("recipe_id", [("ingredient_id","=",ingredient_id)],"recipeingredient")
+            if len(recipe_ids) == 0:
+                raise Exception(f"No ingredient found for '{request['value']}'")
+        
+        recipe_ids.extend(self.select("recipe_id", [("ingredient_id","=",ingredient["id"])],"recipeingredient"))
+        recipe_ids = list(set(recipe_ids))
+        
         for recipe_id in recipe_ids:
             output.extend(self.get({"key": "id", "value": str(recipe_id[0])}))
 

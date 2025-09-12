@@ -178,6 +178,7 @@ class Table:
     
     def format_result(self, result: list[tuple], columns:list[str] = None) -> list[dict]:
         output = []
+        print(result)
         if not columns:
             columns = list(self.columns.keys())
             try:
