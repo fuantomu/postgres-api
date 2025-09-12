@@ -49,12 +49,11 @@ class IngredientTable(Table):
         
         results = []
         results.extend(self.format_result(self.select("ALL", [(request["key"],"=",request["value"])])))
-        if len(results) == 0:
-            return []
         if request['key'] == 'name':
             results.extend(self.format_result(self.select("ALL", [('alias',"@>",[request['value']])])))
         else:
             results.extend(self.format_result(self.select("ALL", [('alias',"@>",[results[0]['name']])])))
+        
         return results
 
     def update_functions(self):
