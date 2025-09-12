@@ -8,14 +8,13 @@ class Table:
     logger = get_logger("database")
 
     columns = {}
-
     functions = {}
 
     def __init__(self, connection: psycopg.Connection, name: str):
         self.connection = connection
         self.name = name.lower()
         self.schema = "public"
-        self.functions["Add"] = self.post
+        self.functions["Post"] = self.add_or_update
         self.functions["Get"] = self.get
 
     def exists(self, table_name: str = None):
@@ -60,7 +59,11 @@ class Table:
 
         with self.connection.cursor() as cursor:
             try:
-                query = psycopg.sql.SQL("INSERT INTO {table} ({rows}) VALUES ({fields}) RETURNING {return_key}").format(fields=psycopg.sql.SQL(", ").join([psycopg.sql.Placeholder(entry) for entry in request.keys()]), rows=psycopg.sql.SQL(",").join([psycopg.sql.Identifier(entry) for entry in request.keys()]), table=psycopg.sql.Identifier(table_name), return_key=psycopg.sql.Identifier(return_key))
+                query = psycopg.sql.SQL("INSERT INTO {table} ({rows}) VALUES ({fields}) RETURNING {return_key}").format(
+                    fields=psycopg.sql.SQL(", ").join([psycopg.sql.Placeholder(entry) for entry in request.keys() if entry is not "id"]), 
+                    rows=psycopg.sql.SQL(",").join([psycopg.sql.Identifier(entry) for entry in request.keys() if entry is not "id"]),
+                    table=psycopg.sql.Identifier(table_name),
+                    return_key=psycopg.sql.Identifier(return_key))
                 cursor.execute(query, request)
                 self.connection.commit()
                 return cursor.fetchone()[0]
@@ -100,9 +103,9 @@ class Table:
                     return cursor.fetchall()
             except Exception as e:
                 self.logger.exception(e)
-                raise
+                raise e
 
-    def delete(self, request: str|list[tuple], table_name : str = None):
+    def delete(self, request: str|list[tuple], where: list[tuple] = None, table_name : str = None):
         if not table_name:
             table_name = self.name
 
@@ -142,7 +145,7 @@ class Table:
                     psycopg.sql.SQL("{} = {}").format(
                         psycopg.sql.Identifier(k),
                         psycopg.sql.Placeholder(k)
-                    ) for k in request.keys() if k is not "id"
+                    ) for k in request.keys() if k is not "id" and k is not "name"
                 ])
 
                 query = psycopg.sql.SQL(
@@ -193,9 +196,6 @@ class Table:
             output.append(temp)
         return output
     
-    def get_columns(self) -> dict:
-        return self.columns
-    
     def get_functions(self) -> dict:
         return self.functions
     
@@ -207,8 +207,32 @@ class Table:
             return self.format_result(self.select("ALL"))
         return self.format_result(self.select("ALL", [(request["key"],"=",request["value"])]))
     
-    def post(self, request : str|dict):
-        return str(self.insert(request))
-    
     def update_functions(self):
         pass
+
+    def check_for_key(self, request: dict) -> str | None:
+        if(request.get("id")):
+            try:
+                UUID(request["id"])
+                return "id"
+            except:
+                pass
+        if(request.get("name")):
+            return "name"
+        return None
+    
+    def add_or_update(self, request: dict):
+        key = self.check_for_key(request)
+        if not key:
+            raise Exception(f"No id or name found in request")
+        
+        existing_entry = self.select("ALL", [(key,"=",request[key])])
+        self.logger.info(f"Found existing entry {existing_entry}")
+        
+        if existing_entry:
+            request["id"] = existing_entry[0][0]
+            return f"Updated '{self.name}' with id '{self.update(request, [("id","=",request['id'])])}'"
+        else:
+            if not request.get("name"):
+                raise Exception(f"No name found in request")
+            return f"Created '{self.name}' with id '{self.insert(request)}'"

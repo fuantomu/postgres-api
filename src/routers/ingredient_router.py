@@ -1,25 +1,19 @@
-from models.ingredient_model import IngredientAliasModel, IngredientModel
+from models.ingredient_model import IngredientModel
+from models.response_model import BaseResponseModel, IngredientResponseModel
 from routers.base_router import Router
 
 class Ingredient(Router):
     
     def __init__(self):
         super().__init__()
-        self.router.add_api_route("/", self.add, methods=["POST"], status_code=201)
-        self.router.add_api_route("/Alias", self.add_alias, methods=["POST"], status_code=201)
+        self.router.add_api_route("/", self.post, methods=["POST"], status_code=201, summary="Add a new or update an existing ingredient", response_model=BaseResponseModel, responses={400: {"model": BaseResponseModel}})
         
-    async def add(self, ingredient: IngredientModel)-> str:
-        self.logger.info(f"Received POST request on {self.name} - add")
-        self.logger.debug(f"Parameters: {ingredient}")
-        ingredient.__delattr__("id")
-        return super().redirect_request('Add', ingredient.model_dump())
+    async def post(self, ingredient: IngredientModel, overwrite_alias: bool = False):
+        self.logger.info(f"Received POST request on {self.name}")
+        self.logger.debug(f"Parameters: {ingredient},{overwrite_alias}")
+        request = ingredient.model_dump()
+        request["overwrite_alias"] = overwrite_alias
+        return super().redirect_request('Post', request)
     
-    async def add_alias(self, alias: list[IngredientAliasModel], id: str|None = None, name: str|None = None)-> str:
-        self.logger.info(f"Received POST request on {self.name} - add_alias")
-        self.logger.debug(f"Parameters: {id or name} - {alias}")
-        if not id and not name:
-            return super().missing_parameters(["id","name"])
-        return super().redirect_request('Alias', {"key": "id" if id else "name", "value": id or name, "alias": [_alias.model_dump() for _alias in alias]})
-    
-    def get(self, id: str = None, name: str = None, include_alias : bool = True) -> list[IngredientModel]:
-        return super().redirect_request('Get', {"key": "id" if id else "name", "value": id or name, "include_alias": include_alias})
+    def get(self, search_alias : bool = None, id: str = None, name: str = None) -> IngredientResponseModel | BaseResponseModel:
+        return super().redirect_request('Get', {"key": "id" if id else "name", "value": id or name, "search_alias": search_alias or False})

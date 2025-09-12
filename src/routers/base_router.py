@@ -1,8 +1,10 @@
+from uuid import UUID
 from fastapi import APIRouter
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from logger.log import get_logger
 from database.database import Database
 from helper.exception import handle_exception
+from models.response_model import BaseResponseModel
 
 class Router:
 
@@ -12,13 +14,13 @@ class Router:
         self.name = self.__class__.__name__
         self.router = APIRouter()
         self.database = None
-        self.router.add_api_route("/", self.get, methods=["GET"], status_code=202)
+        self.router.add_api_route("/", self.get, methods=["GET"], status_code=202, summary=f"Get details for a {self.name}", responses={400: {"model": BaseResponseModel}})
 
-    def set_database(self, database : Database):
+    def set_database(self, database : Database) -> None:
         self.database = database
         
     def return_result(self, result=None):
-        return result
+        return {"Result": result}
     
     def get(self, id: str = None, name: str = None):
         self.logger.info(f"Received GET request on {self.name}")
@@ -26,9 +28,8 @@ class Router:
     
     def missing_parameters(self, parameters:list[str]) -> Response:
         return Response(status_code=400, content= f"Missing one or more required parameters in: '{",".join(parameters)}'", media_type="text/plain")
-
     
-    def redirect_request(self, _func : str, request: str|dict) -> Response:
+    def redirect_request(self, _func : str, request: str|dict) -> JSONResponse | Response:
         self.logger.info("Redirecting request to database")
         with self.database as database:
             try:
@@ -36,5 +37,5 @@ class Router:
                 return self.return_result(result)
             except Exception as e:
                 self.logger.exception(e)
-                return Response(status_code=400, content = handle_exception(e), media_type="text/plain")
+                return JSONResponse({"Result": handle_exception(e)}, 400)
                 

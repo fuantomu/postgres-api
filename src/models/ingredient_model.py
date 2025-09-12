@@ -2,9 +2,6 @@ from pydantic import BaseModel
 
 class IngredientModel(BaseModel):
     id: str | None = None
-    name: str
-    description: str
+    name: str | None = None
+    description: str | None = None
     alias: list[str] | None = None
-
-class IngredientAliasModel(BaseModel):
-    name: str

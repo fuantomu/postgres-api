@@ -80,6 +80,5 @@ def add_recipes(connection: psycopg.Connection):
             "quantity": "12g"
         }]
     }]
-    recipe_ids = []
     for recipe in recipes:
-        recipe_ids.append(recipes_table.insert(recipe))
+        recipes_table.insert(recipe)

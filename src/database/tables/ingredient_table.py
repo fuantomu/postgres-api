@@ -24,32 +24,25 @@ class IngredientTable(Table):
         }
     }
 
-    def add_alias(self, request: dict):
-        try:
-            ingredient = request["value"] if request["key"] == "id" else self.format_result(self.select("ALL", [(request["key"],"=",request["value"])], "ingredient"))[0]
-        except IndexError:
-            raise Exception(f"No ingredient found for '{request['value']}'")
-        
-        update_request = {
-            "id": ingredient["id"],
-            "alias": [alias['name'] for alias in request['alias']]
-        }
+    def update_alias(self, request: dict):
+        ingredient = self.format_result(self.select("ALL", [("id","=",request['id'])], "ingredient"))[0]
+        alias_list = [alias for alias in request['alias']]
 
-        for alias in update_request['alias']:
+        for alias in alias_list:
             if alias == ingredient["name"]:
-                update_request["alias"].remove(alias)
+                alias_list.remove(alias)
                 self.logger.warning(f"'{alias}' is the same name as the Ingredient. Removing from request")
 
         if ingredient.get("alias"):
-            update_request["alias"].extend(ingredient['alias'])
-            update_request["alias"] = list(set(update_request['alias']))
+            alias_list.extend(ingredient['alias'])
+            alias_list = list(set(alias_list))
 
-        return self.update(update_request, [("id","=",ingredient["id"])], "ingredient")
+        return alias_list
     
     def get(self, request : str|dict):
         if not request["value"]:
             return Table.get(self, request)
-        if not request["include_alias"]:
+        if not request["search_alias"]:
             return self.format_result(self.select("ALL", [(request["key"],"=",request["value"])]))
         
         results = []
@@ -61,18 +54,24 @@ class IngredientTable(Table):
         
         return results
     
-    def insert(self, request: dict) -> None:
+    def insert(self, request: dict) -> str:
+        request.pop("overwrite_alias", None)
         for alias in request.get('alias',[]):
             if alias == request["name"]:
                 request["alias"].remove(alias)
                 self.logger.warning(f"'{alias}' is the same name as the Ingredient. Removing from request")
                 
-        return str(Table.insert(self, request))
+        return super().insert(request)
+    
+    def update(self, request: dict, where = None, table_name = None, return_key = "id"):
+        if not request["overwrite_alias"]:
+            request['alias'] = self.update_alias(request)
+        request.pop("overwrite_alias")
+        return super().update(request, where, "ingredient")
 
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")
-        self.set_function("Alias", self.add_alias)
         self.set_function("Get", self.get)
-        self.set_function("Add", self.insert)
+        self.set_function("Post", self.add_or_update)
 
     

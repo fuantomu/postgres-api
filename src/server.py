@@ -59,7 +59,7 @@ if __name__ == '__main__':
         server.initialize_database()
         server.test_data()
     except Exception as e:
-        server.logger.error(handle_exception(e))
+        server.logger.exception(handle_exception(e))
         server.logger.info("Exiting program")
         exit(0)
 
