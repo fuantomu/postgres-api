@@ -35,6 +35,11 @@ class IngredientTable(Table):
             "alias": [alias['name'] for alias in request['alias']]
         }
 
+        for alias in update_request['alias']:
+            if alias == ingredient["name"]:
+                update_request["alias"].remove(alias)
+                self.logger.warning(f"'{alias}' is the same name as the Ingredient. Removing from request")
+
         if ingredient.get("alias"):
             update_request["alias"].extend(ingredient['alias'])
             update_request["alias"] = list(set(update_request['alias']))
@@ -55,10 +60,19 @@ class IngredientTable(Table):
             results.extend(self.format_result(self.select("ALL", [('alias',"@>",[results[0]['name']])])))
         
         return results
+    
+    def insert(self, request: dict) -> None:
+        for alias in request.get('alias',[]):
+            if alias == request["name"]:
+                request["alias"].remove(alias)
+                self.logger.warning(f"'{alias}' is the same name as the Ingredient. Removing from request")
+                
+        return str(Table.insert(self, request))
 
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")
         self.set_function("Alias", self.add_alias)
         self.set_function("Get", self.get)
+        self.set_function("Add", self.insert)
 
     
