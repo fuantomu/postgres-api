@@ -42,7 +42,6 @@ class RecipeIngredientTable(Table):
             Table.insert(self,_request, "recipeingredient", "recipe_id")
 
     def update(self, request: dict) -> None:
-        
         for ingredient in request["ingredients"].copy():
             result = self.select("id", [("name","=",ingredient["name"])],"ingredient")
             if result:
@@ -52,7 +51,7 @@ class RecipeIngredientTable(Table):
                 self.logger.warning(f"No ingredient found for '{ingredient['name']}'")
         
         if request["overwrite_ingredients"]:
-            self.delete("ALL", [("recipe_id","=",request["recipe_id"])], "recipeingredient")
+            self.delete([("recipe_id","=",request["recipe_id"])], "recipeingredient")
 
         existing_ingredients = self.select("ingredient_id", [("recipe_id","=",request["recipe_id"])],"recipeingredient")
         for new_ingredient in request["ingredients"].copy():

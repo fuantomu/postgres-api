@@ -105,26 +105,25 @@ class Table:
                 self.logger.exception(e)
                 raise e
 
-    def delete(self, request: str|list[tuple], where: list[tuple] = None, table_name : str = None):
+    def delete(self, where: str|list[tuple], table_name : str = None):
         if not table_name:
             table_name = self.name
 
         if not self.exists(table_name=table_name):
             raise Exception(f"Table '{table_name}' does not exist")
         
-        self.logger.debug(f"Trying to delete {request} from '{table_name}'")
-
+        self.logger.debug(f"Trying to delete {where} from '{table_name}'")
+        query = psycopg.sql.SQL("DELETE FROM {table}").format(table=psycopg.sql.Identifier(table_name))
         with self.connection.cursor() as cursor:
             try:
-                if not request == "ALL":
+                if not where == "ALL":
                     query += psycopg.sql.SQL(" WHERE ")
                     params = {}
-                    for item in request:
+                    for item in where:
                         query += psycopg.sql.SQL(" OR ").join([psycopg.sql.SQL("{field} {equal} {value}").format(field=psycopg.sql.Identifier(item[0]),equal=psycopg.sql.SQL("=") if item[1] == "=" else psycopg.sql.SQL("like"),value=psycopg.sql.Placeholder(item[0]))])
                         params[item[0]] = item[2]
                     cursor.execute(query,params)
                 else:
-                    query = psycopg.sql.SQL("DELETE FROM {table}").format(table=psycopg.sql.Identifier(table_name))
                     cursor.execute(query)
             except Exception as e:
                 self.logger.error(e)
