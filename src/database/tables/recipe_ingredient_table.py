@@ -21,22 +21,20 @@ class RecipeIngredientTable(Table):
     }
 
     def insert_recipe_ingredient(self, request: dict) -> None:
-        recipe_ingredient_requests = []
+        ingredients = []
         for ingredient in request["ingredients"]:
-            temp_request = {
+            if ingredient["name"]:
+                ingredients.extend([("name","=",ingredient["name"])])
+            else:
+                ingredients.extend([("id","=",ingredient["id"])])
+        ingredients.append("OR")
+        ingredients = self.select("id", ingredients, "ingredient")
+
+        recipe_ingredient_requests = [{
                 "recipe_id" : request["recipe_id"],
-                "quantity" : ingredient["quantity"]
-            }
-            try:
-                if ingredient["name"]:
-                    temp_request["ingredient_id"] = self.select("id", [("name","=",ingredient["name"])], "ingredient")[0][0]
-                else:
-                    temp_request["ingredient_id"] = self.select("id", [("id","=",ingredient["id"])], "ingredient")[0][0]
-            except IndexError:
-                self.logger.error(f"Ingredient '{ingredient['name'] or ingredient['id']}' does not exist")
-            
-            if temp_request.get("ingredient_id"):
-                recipe_ingredient_requests.append(temp_request)
+                "ingredient_id" : ingredient[0],
+                "quantity" : request["ingredients"][idx]["quantity"]
+            } for idx,ingredient in enumerate(ingredients)]
 
         for _request in recipe_ingredient_requests:
             Table.insert(self,_request, "recipeingredient", "recipe_id")
@@ -58,12 +56,16 @@ class RecipeIngredientTable(Table):
             for existing_ingredient in existing_ingredients:
                 if new_ingredient["id"] == existing_ingredient[0]:
                     request["ingredients"].remove(new_ingredient)
-        
-        recipe_ingredient_request = {
-            "recipe_id": request["recipe_id"],
-            "ingredients": request["ingredients"]
-        }
-        return RecipeIngredientTable.insert_recipe_ingredient(self,recipe_ingredient_request)
+
+        if len(request["ingredients"]) > 0:
+            recipe_ingredient_request = {
+                "recipe_id": request["recipe_id"],
+                "ingredients": request["ingredients"]
+            }
+            return RecipeIngredientTable.insert_recipe_ingredient(self,recipe_ingredient_request)
+        else:
+            return RecipeIngredientTable.delete(self, [("recipe_id","=",request["recipe_id"])], "recipeingredient")
+         
 
         
 

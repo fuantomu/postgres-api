@@ -70,7 +70,7 @@ class Table:
             except psycopg.errors.UniqueViolation as e:
                 raise e
     
-    def select(self, request: str|list[str], where: list[tuple] = None, table_name : str = None) -> list[psycopg.rows.Row]:
+    def select(self, request: str|list[str], where: list[tuple] = None, table_name : str = None, inner_join: str = None) -> list[psycopg.rows.Row]:
         if not table_name:
             table_name = self.name
 
@@ -85,17 +85,19 @@ class Table:
                     if request == "ALL":
                         query = psycopg.sql.SQL("SELECT * FROM {table}").format(table=psycopg.sql.Identifier(table_name))
                     else:
-                        query = psycopg.sql.SQL("SELECT {field} FROM {table}").format(field=psycopg.sql.Identifier(request), table=psycopg.sql.Identifier(table_name))
+                        query = psycopg.sql.SQL("SELECT {field} FROM {table}").format(
+                            field=psycopg.sql.Identifier(request), 
+                            table=psycopg.sql.Identifier(table_name))
                 else:
-                    query = psycopg.sql.SQL("SELECT {fields} FROM {table}").format(fields=psycopg.sql.SQL(",").join([psycopg.sql.Identifier(entry) for entry in request]), table=psycopg.sql.Identifier(table_name))
+                    query = psycopg.sql.SQL("SELECT {fields} FROM {table}").format(
+                        fields=psycopg.sql.SQL(",").join([psycopg.sql.Identifier(entry) for entry in request]), 
+                        table=psycopg.sql.Identifier(table_name))
                 
+                if inner_join:
+                    query += psycopg.sql.SQL(" INNER JOIN {inner_join}".format(inner_join=inner_join))
                 
                 if where:
-                    query += psycopg.sql.SQL(" WHERE ")
-                    params = {}
-                    for item in where:
-                        query += psycopg.sql.SQL(" AND ").join([psycopg.sql.SQL("{field} {equal} {value}").format(field=psycopg.sql.Identifier(item[0]),equal=psycopg.sql.SQL(item[1]),value=psycopg.sql.Placeholder(item[0]))])
-                        params[item[0]] = item[2]
+                    query,params = self.format_where(query, where, {})
                     cursor.execute(query, params)
                     return cursor.fetchall()
                 else:
@@ -117,11 +119,7 @@ class Table:
         with self.connection.cursor() as cursor:
             try:
                 if not where == "ALL":
-                    query += psycopg.sql.SQL(" WHERE ")
-                    params = {}
-                    for item in where:
-                        query += psycopg.sql.SQL(" OR ").join([psycopg.sql.SQL("{field} {equal} {value}").format(field=psycopg.sql.Identifier(item[0]),equal=psycopg.sql.SQL("=") if item[1] == "=" else psycopg.sql.SQL("like"),value=psycopg.sql.Placeholder(item[0]))])
-                        params[item[0]] = item[2]
+                    query,params = self.format_where(query,where,{})
                     cursor.execute(query,params)
                 else:
                     cursor.execute(query)
@@ -161,11 +159,7 @@ class Table:
                     params[k] = request[k]
                 
                 if where:
-                    query += psycopg.sql.SQL(" WHERE ")
-                    
-                    for item in where:
-                        query += psycopg.sql.SQL(" AND ").join([psycopg.sql.SQL("{field} {equal} {value}").format(field=psycopg.sql.Identifier(item[0]),equal=psycopg.sql.SQL("=") if item[1] == "=" else psycopg.sql.SQL("like"),value=psycopg.sql.Placeholder(item[0]))])
-                        params[item[0]] = item[2]
+                    query,params = self.format_where(query,where,params)
 
                 query += psycopg.sql.SQL(" RETURNING {return_key}").format(
                     return_key=psycopg.sql.Identifier(return_key)
@@ -235,3 +229,19 @@ class Table:
             if not request.get("name"):
                 raise Exception(f"No name found in request")
             return f"Created '{self.name}' with id '{self.insert(request)}'"
+        
+    def format_where(self, query, where: list[tuple|str], params={}):
+        query += psycopg.sql.SQL(" WHERE ")
+                    
+        connector = "OR"
+        if isinstance(where[-1], str):
+            connector = where[-1]
+            where = where[:-1]
+        
+        query += psycopg.sql.SQL(" {connector} ".format(connector=connector)).join([psycopg.sql.SQL("{field} {equal} {value}").format(
+            field=psycopg.sql.Identifier(item[0]),
+            equal=psycopg.sql.SQL(item[1]),
+            value=psycopg.sql.Placeholder(f"{item[0]}_{idx}")) for idx,item in enumerate(where)] )
+        for idx,item in enumerate(where):
+            params[f"{item[0]}_{idx}"] = item[2]
+        return query,params

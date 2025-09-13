@@ -46,11 +46,13 @@ class IngredientTable(Table):
             return self.format_result(self.select("ALL", [(request["key"],"=",request["value"])]))
         
         results = []
-        results.extend(self.format_result(self.select("ALL", [(request["key"],"=",request["value"])])))
+        selection = [(request["key"],"=",request["value"])]
         if request['key'] == 'name':
-            results.extend(self.format_result(self.select("ALL", [('alias',"@>",[request['value']])])))
+            selection.extend([('alias',"@>",[request['value']])])
         else:
-            results.extend(self.format_result(self.select("ALL", [('alias',"@>",[results[0]['name']])])))
+            selection.extend([('alias',"@>",[results[0]['name']])])
+        selection.extend(["OR"])
+        results = self.format_result(self.select("ALL", selection))
         
         return results
     

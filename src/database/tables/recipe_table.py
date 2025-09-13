@@ -26,25 +26,25 @@ class RecipeTable(Table):
         request.pop("overwrite_ingredients", None)
         ingredients = request.pop("ingredients", None)
         recipe_id = super().insert(request)
-        recipe_ingredient_request = {
-            "recipe_id": recipe_id,
-            "ingredients": ingredients
-        }
-        RecipeIngredientTable.insert_recipe_ingredient(self, recipe_ingredient_request)
+        if len(ingredients) > 0:
+            recipe_ingredient_request = {
+                "recipe_id": recipe_id,
+                "ingredients": ingredients
+            }
+            RecipeIngredientTable.insert_recipe_ingredient(self, recipe_ingredient_request)
+        
         return recipe_id
     
     def get(self, request : str|dict):
         output : list[RecipeModel] = super().get(request)
+        recipe_ingredients = self.select(["recipe_id","ingredient_id","name","quantity"],[("recipe_id","=",x) for x in output].extend(["OR"]),"recipeingredient", "ingredient ON id = ingredient_id")
         for recipe in output:
-            ingredients = self.select("ALL",[("recipe_id","=",recipe["id"])],"recipeingredient")
-            recipe["ingredients"] = []
-            for ingredient in ingredients:
-                result = self.select("ALL", [("id","=",ingredient[1])],"ingredient")[0]
-                recipe["ingredients"].append({
+            current_recipe_ingredients = [ingredient for ingredient in recipe_ingredients if str(ingredient[0]) == recipe["id"]]
+            recipe["ingredients"] = [{
                     "id": str(ingredient[1]),
-                    "name": result[1],
-                    "quantity": ingredient[2]
-                })
+                    "name": ingredient[2],
+                    "quantity": ingredient[3]
+                } for ingredient in current_recipe_ingredients]
 
         return output
     
@@ -62,17 +62,20 @@ class RecipeTable(Table):
         output : list[RecipeModel|None] = []
         recipe_ids = []
         if request["include_alias"] and request['key'] == "name":
-            ingredients = self.format_result(self.select("ALL", [('alias',"@>",[request["value"]])], "ingredient"))
-            for ingredient in ingredients:
-                recipe_ids.extend(self.select("recipe_id", [("ingredient_id","=",ingredient["id"])],"recipeingredient"))            
+            ingredients = self.format_result(self.select("ALL", [('alias',"@>",[request["value"]]),(request["key"],"=",request["value"]),"OR"], "ingredient"))
+            recipe_ids.extend([("ingredient_id","=",ingredient["id"]) for ingredient in ingredients])
 
-        try:
-            ingredient = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])], "ingredient"))[0]
-        except IndexError:
-            if len(recipe_ids) == 0:
-                raise Exception(f"No ingredient found for '{request['value']}'")
-        
-        recipe_ids.extend(self.select("recipe_id", [("ingredient_id","=",ingredient["id"])],"recipeingredient"))
+        else:           
+            try:
+                ingredient = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])], "ingredient"))[0]
+            except IndexError:
+                if len(recipe_ids) == 0:
+                    raise Exception(f"No ingredient found for '{request['value']}'")
+            
+            recipe_ids.extend([("ingredient_id","=",ingredient["id"])])
+
+        recipe_ids.append("OR")
+        recipe_ids = self.select("recipe_id", recipe_ids, "recipeingredient")
         recipe_ids = list(set(recipe_ids))
         
         for recipe_id in recipe_ids:
