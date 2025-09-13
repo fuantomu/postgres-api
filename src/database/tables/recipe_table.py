@@ -26,7 +26,8 @@ class RecipeTable(Table):
         request.pop("overwrite_ingredients", None)
         ingredients = request.pop("ingredients", None)
         recipe_id = super().insert(request)
-        if len(ingredients) > 0:
+        
+        if ingredients is not None and len(ingredients) > 0:
             recipe_ingredient_request = {
                 "recipe_id": recipe_id,
                 "ingredients": ingredients
@@ -50,12 +51,14 @@ class RecipeTable(Table):
     
     def update(self, request: dict, where = None, table_name = None, return_key = "id"):
         ingredients = request.pop("ingredients", None)
-        recipe_ingredient_request = {
-            "recipe_id" : request["id"],
-            "ingredients" : ingredients,
-            "overwrite_ingredients": request.pop("overwrite_ingredients", None)
-        }
-        RecipeIngredientTable.update(self, recipe_ingredient_request)
+        overwrite_ingredients = request.pop("overwrite_ingredients", None)
+        if ingredients is not None and len(ingredients):
+            recipe_ingredient_request = {
+                "recipe_id" : request["id"],
+                "ingredients" : ingredients,
+                "overwrite_ingredients": overwrite_ingredients
+            }
+            RecipeIngredientTable.update(self, recipe_ingredient_request)
         return super().update(request, where, "recipe")
     
     def get_recipes_by_ingredient(self, request: str|dict):

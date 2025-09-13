@@ -6,4 +6,4 @@ class RecipeModel(BaseModel):
     id: str | None = None
     name: str | None = None
     description: str | None = None
-    ingredients: List[RecipeIngredientModel] = Field(default_factory=list)
+    ingredients: List[RecipeIngredientModel]|None = None
