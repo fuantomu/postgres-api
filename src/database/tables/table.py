@@ -142,7 +142,7 @@ class Table:
                     psycopg.sql.SQL("{} = {}").format(
                         psycopg.sql.Identifier(k),
                         psycopg.sql.Placeholder(k)
-                    ) for k in request.keys() if k is not "id" and k is not "name"
+                    ) for k in request.keys() if k != "id" and k != "name"
                 ])
 
                 query = psycopg.sql.SQL(
