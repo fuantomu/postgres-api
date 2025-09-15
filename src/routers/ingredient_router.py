@@ -14,6 +14,9 @@ class Ingredient(Router):
         request = ingredient.model_dump()
         request["overwrite_alias"] = overwrite_alias
         request.pop("id")
+        for key in request.copy().keys():
+            if request[key] is None:
+                request.pop(key)
         return super().redirect_request('Post', request)
     
     def get(self, search_alias : bool = None, id: str = None, name: str = None) -> IngredientResponseModel | BaseResponseModel:

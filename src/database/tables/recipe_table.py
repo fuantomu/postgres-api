@@ -59,6 +59,8 @@ class RecipeTable(Table):
                 "overwrite_ingredients": overwrite_ingredients
             }
             RecipeIngredientTable.update(self, recipe_ingredient_request)
+        if list(request.keys()) == ["name","id"]:
+            return str(request['id'])
         return super().update(request, where, "recipe")
     
     def get_recipes_by_ingredient(self, request: str|dict):

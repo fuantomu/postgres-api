@@ -22,6 +22,9 @@ class Recipe(Router):
         request = recipe.model_dump()
         request["overwrite_ingredients"] = overwrite_ingredients
         request.pop("id")
+        for key in request.copy().keys():
+            if request[key] is None:
+                request.pop(key)
         return super().redirect_request('Post', request)
 
     def get(self, id: str = None, name: str = None) -> RecipeResponseModel:

@@ -72,6 +72,8 @@ class IngredientTable(Table):
         if not request["overwrite_alias"]:
             request['alias'] = self.update_alias(request)
         request.pop("overwrite_alias")
+        if list(request.keys()) == ["name","id"]:
+            return str(request['id'])
         return super().update(request, where, "ingredient")
 
     def update_functions(self):
