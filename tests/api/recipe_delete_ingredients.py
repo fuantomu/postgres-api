@@ -12,11 +12,11 @@ class TestRecipeIngredientsDelete(BaseAPITest):
 
 
     def test_delete_ingredient_by_name_positive(self):
-        recipe = self.recipes[4]
+        recipe = self.recipes[9]
         request = [{
-            "name": self.recipes[4]['ingredients'][0]["name"]
+            "name": recipe['ingredients'][0]["name"]
         },{
-            "name": self.recipes[4]['ingredients'][1]["name"]
+            "name": recipe['ingredients'][1]["name"]
         }]
         response = self.client.request("DELETE",f"/api/{self.endpoint}/?name={recipe['name']}", json=request)
         if response.status_code == self.base_success_code:
@@ -25,7 +25,7 @@ class TestRecipeIngredientsDelete(BaseAPITest):
             response_recipes = self.client.get(f"/api/Recipe/?name={recipe['name']}")
             if response_recipes.status_code == self.get_success_code:
                 result_recipes = response_recipes.json()["Result"][0]
-                self.assertEqual(self.recipes[4]["ingredients"][2:], result_recipes["ingredients"])
+                self.assertEqual(recipe["ingredients"][2:], result_recipes["ingredients"])
             else:
                 self.fail(f"Did not get status code {self.get_success_code} - {response_recipes.status_code}")
         else:
@@ -46,9 +46,9 @@ class TestRecipeIngredientsDelete(BaseAPITest):
             self.fail(f"Did not get status code {self.bad_request_error_code} - {response.status_code}")
     
     def test_delete_ingredient_by_id_positive(self):
-        recipe = self.recipes[5]
+        recipe = self.recipes[7]
         request = [{
-            "name": self.recipes[5]['ingredients'][0]["name"]
+            "name": recipe['ingredients'][0]["name"]
         }]
         response = self.client.request("DELETE",f"/api/{self.endpoint}/?id={recipe['id']}", json=request)
         if response.status_code == self.base_success_code:
@@ -57,7 +57,7 @@ class TestRecipeIngredientsDelete(BaseAPITest):
             response_recipes = self.client.get(f"/api/Recipe/?id={recipe['id']}")
             if response_recipes.status_code == self.get_success_code:
                 result_recipes = response_recipes.json()["Result"][0]
-                self.assertEqual(self.recipes[5]["ingredients"][1:], result_recipes["ingredients"])
+                self.assertEqual(recipe["ingredients"][1:], result_recipes["ingredients"])
             else:
                 self.fail(f"Did not get status code {self.get_success_code} - {response_recipes.status_code}")
         else:
@@ -66,7 +66,7 @@ class TestRecipeIngredientsDelete(BaseAPITest):
     def test_delete_ingredient_by_id_negative_unknown_id(self):
         recipe_id = "07000000-1111-11f0-909f-0242ac120007"
         request = [{
-            "name": self.recipes[5]['ingredients'][0]["name"]
+            "name": self.recipes[8]['ingredients'][0]["name"]
         }]
         response = self.client.request("DELETE",f"/api/{self.endpoint}/?id={recipe_id}", json=request)
         if response.status_code == self.bad_request_error_code:
@@ -78,7 +78,7 @@ class TestRecipeIngredientsDelete(BaseAPITest):
     def test_delete_ingredient_by_id_negative_incorrect_id(self):
         recipe_id = "12345"
         request = [{
-            "name": self.recipes[5]['ingredients'][0]["name"]
+            "name": self.recipes[8]['ingredients'][0]["name"]
         }]
         response = self.client.request("DELETE",f"/api/{self.endpoint}/?id={recipe_id}", json=request)
         if response.status_code == self.bad_request_error_code:
@@ -88,7 +88,7 @@ class TestRecipeIngredientsDelete(BaseAPITest):
             self.fail(f"Did not get status code {self.bad_request_error_code} - {response.status_code}")
 
     def test_delete_ingredient_negative_empty_request(self):
-        recipe = self.recipes[6]
+        recipe = self.recipes[8]
         request = []
         response = self.client.request("DELETE",f"/api/{self.endpoint}/?name={recipe['name']}", json=request)
         if response.status_code == self.bad_request_error_code:
@@ -98,7 +98,7 @@ class TestRecipeIngredientsDelete(BaseAPITest):
             self.fail(f"Did not get status code {self.bad_request_error_code} - {response.status_code}")
     
     def test_delete_ingredient_negative_bad_ingredient_id(self):
-        recipe = self.recipes[6]
+        recipe = self.recipes[8]
         request = [{
             "id": "07000000-1111-11f0-909f-0242ac120007"
         }]
@@ -110,7 +110,7 @@ class TestRecipeIngredientsDelete(BaseAPITest):
             self.fail(f"Did not get status code {self.bad_request_error_code} - {response.status_code}")
     
     def test_delete_ingredient_positive_bad_ingredient_id(self):
-        recipe = self.recipes[6]
+        recipe = self.recipes[8]
         request = [{
             "id": "07000000-1111-11f0-909f-0242ac120007"
         },{
@@ -123,7 +123,7 @@ class TestRecipeIngredientsDelete(BaseAPITest):
             response_recipes = self.client.get(f"/api/Recipe/?id={recipe['id']}")
             if response_recipes.status_code == self.get_success_code:
                 result_recipes = response_recipes.json()["Result"][0]
-                self.assertEqual([self.recipes[6]["ingredients"][0]], result_recipes["ingredients"])
+                self.assertEqual([recipe["ingredients"][0]], result_recipes["ingredients"])
             else:
                 self.fail(f"Did not get status code {self.get_success_code} - {response_recipes.status_code}")
         else:
