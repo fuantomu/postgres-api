@@ -13,9 +13,21 @@ class Server:
 
     def __init__(self, port: int = None, database: str = None):
         self.port = port or int(getenv("SERVICE_PORT"))
-        self.app = FastAPI(title="Cookbook",version="0.1",contact={"name":"fuantomu","email":"fuantomuw@gmail.com"},docs_url='/',root_path="/api")
+        self.app = FastAPI(
+            title="Cookbook",
+            version="0.1",
+            contact={"name": "fuantomu", "email": "fuantomuw@gmail.com"},
+            docs_url="/",
+            root_path="/api",
+        )
         self.routers = {}
-        self.database = Database(getenv("POSTGRES_HOST"), getenv("POSTGRES_PORT"), getenv("POSTGRES_USER"), getenv("POSTGRES_PASSWORD"), database or getenv("POSTGRES_DB"))
+        self.database = Database(
+            getenv("POSTGRES_HOST"),
+            getenv("POSTGRES_PORT"),
+            getenv("POSTGRES_USER"),
+            getenv("POSTGRES_PASSWORD"),
+            database or getenv("POSTGRES_DB"),
+        )
 
     def initialize_logging(self):
         logging.getLogger("asyncio").propagate = False
@@ -27,14 +39,14 @@ class Server:
         self.routers["Recipe"] = routers.Recipe()
         self.routers["Ingredient"] = routers.Ingredient()
 
-        for key,value in self.routers.items():
+        for key, value in self.routers.items():
             self.app.include_router(value.router, prefix=f"/{key}", tags=[key])
 
     def initialize_database(self):
         with self.database as d:
             d.initialize()
-        
-        for _,router in self.routers.items():
+
+        for _, router in self.routers.items():
             router.database = self.database
 
     def clean_database(self):
@@ -47,10 +59,12 @@ class Server:
 
     def run(self):
         self.logger.info(f"Running on port {self.port}")
-        uvicorn.run(self.app, port=self.port, host='0.0.0.0', reload=False, log_config=None)
+        uvicorn.run(
+            self.app, port=self.port, host="0.0.0.0", reload=False, log_config=None
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     server = Server()
     server.initialize_endpoints()
     server.initialize_logging()

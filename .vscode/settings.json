@@ -1,0 +1,16 @@
+{
+    "cSpell.words": [
+        "conname",
+        "conrelid",
+        "contype",
+        "datname",
+        "dotenv",
+        "fuantomu",
+        "levelname",
+        "levelno",
+        "recipeingredient",
+        "regclass"
+    ],
+    "editor.formatOnSave": true,
+    "flake8.args": ["--ignore=E501"]
+}

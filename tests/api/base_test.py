@@ -1,5 +1,6 @@
 import unittest
 
+
 class BaseAPITest(unittest.TestCase):
     base_success_code = 200
     get_success_code = 202
@@ -7,7 +8,6 @@ class BaseAPITest(unittest.TestCase):
     bad_request_error_code = 400
     validation_error_code = 422
 
-    def __init__(self, methodName = "runTest", client = None):
+    def __init__(self, methodName="runTest", client=None):
         super().__init__(methodName)
         self.client = client
-

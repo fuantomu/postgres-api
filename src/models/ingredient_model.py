@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class IngredientModel(BaseModel):
     id: str | None = None
     name: str | None = None
