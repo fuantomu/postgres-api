@@ -11,7 +11,7 @@ class TestIngredientPost(BaseAPITest):
 
     def test_post_positive_missing_optional_parameters(self):
         request = {
-            "name": "TestMissingOptionalParameters"
+            "name": "TestIngredientMissingOptionalParameters"
         }
         response = self.client.post(f"/api/{self.endpoint}/", json=request)
         if response.status_code == self.post_success_code:
