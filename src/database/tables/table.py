@@ -1,7 +1,7 @@
 from uuid import UUID
 import psycopg
-from database.helper.statement import generate_statement
-from logger.log import get_logger
+from src.database.helper.statement import generate_statement
+from src.logger.log import get_logger
 
 
 class Table:
@@ -60,8 +60,8 @@ class Table:
         with self.connection.cursor() as cursor:
             try:
                 query = psycopg.sql.SQL("INSERT INTO {table} ({rows}) VALUES ({fields}) RETURNING {return_key}").format(
-                    fields=psycopg.sql.SQL(", ").join([psycopg.sql.Placeholder(entry) for entry in request.keys() if entry is not "id"]), 
-                    rows=psycopg.sql.SQL(",").join([psycopg.sql.Identifier(entry) for entry in request.keys() if entry is not "id"]),
+                    fields=psycopg.sql.SQL(", ").join([psycopg.sql.Placeholder(entry) for entry in request.keys()]), 
+                    rows=psycopg.sql.SQL(",").join([psycopg.sql.Identifier(entry) for entry in request.keys()]),
                     table=psycopg.sql.Identifier(table_name),
                     return_key=psycopg.sql.Identifier(return_key))
                 cursor.execute(query, request)
@@ -104,7 +104,6 @@ class Table:
                     cursor.execute(query)
                     return cursor.fetchall()
             except Exception as e:
-                self.logger.exception(e)
                 raise e
 
     def delete(self, where: str|list[tuple], table_name : str = None):
@@ -124,8 +123,7 @@ class Table:
                 else:
                     cursor.execute(query)
             except Exception as e:
-                self.logger.error(e)
-                raise
+                raise e
 
     def update(self, request: str|list[str], where: list[tuple] = None, table_name : str = None, return_key : str = "id") -> None:
         if not table_name:
@@ -168,8 +166,7 @@ class Table:
                 cursor.connection.commit()
                 return str(cursor.fetchone()[0])
             except Exception as e:
-                self.logger.exception(e)
-                raise
+                raise e
     
     def format_result(self, result: list[tuple], columns:list[str] = None) -> list[dict]:
         output = []
@@ -198,7 +195,10 @@ class Table:
     def get(self, request : str|dict):
         if not request["value"]:
             return self.format_result(self.select("ALL"))
-        return self.format_result(self.select("ALL", [(request["key"],"=",request["value"])]))
+        result = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])]))
+        if len(result) == 0:
+            raise Exception(f"No {self.name} found for '{request["value"]}'")
+        return result
     
     def update_functions(self):
         pass
@@ -217,7 +217,7 @@ class Table:
     def add_or_update(self, request: dict):
         key = self.check_for_key(request)
         if not key:
-            raise Exception(f"No id or name found in request")
+            raise Exception(f"No name found in request")
         
         existing_entry = self.select("ALL", [(key,"=",request[key])])
         self.logger.info(f"Found existing entry {existing_entry}")

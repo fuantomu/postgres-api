@@ -1,10 +1,9 @@
-from uuid import UUID
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, Response
-from logger.log import get_logger
-from database.database import Database
-from helper.exception import handle_exception
-from models.response_model import BaseResponseModel
+from src.logger.log import get_logger
+from src.database.database import Database
+from src.helper.exception import handle_exception
+from src.models.response_model import BaseResponseModel
 
 class Router:
 

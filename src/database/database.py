@@ -1,6 +1,6 @@
 import psycopg
-from logger.log import get_logger
-from database.structure.initialize import add_ingredients, add_recipes, find_table, initialize_tables
+from src.logger.log import get_logger
+from src.database.structure.initialize import add_ingredients, add_recipes, find_table, initialize_tables
 
 class Database:
     logger = get_logger("database")
@@ -10,6 +10,8 @@ class Database:
         self.username = username
         self.password = password
         self.database_name = database_name
+        self.create_if_not_exists()
+        self.logger.debug(f"Creating connection to database '{self.database_name}'")
 
     def __enter__(self):
         self.logger.info("Opening connection to database")
@@ -71,4 +73,14 @@ class Database:
             new_table = table_class(self.connection, router)
             new_table.update_functions()
             return new_table.get_functions()[function](request)
+        
+    def create_if_not_exists(self):
+        with psycopg.connect(dbname="postgres", user=self.username, password=self.password, host=self.host, port=5432, autocommit=True) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (self.database_name,))
+                exists = cur.fetchone()
+
+                if not exists:
+                    cur.execute(f'CREATE DATABASE "{self.database_name}"')
+                    self.logger.info(f"Database '{self.database_name}' created.")
             

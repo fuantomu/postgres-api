@@ -1,4 +1,4 @@
-from database.tables.table import Table
+from src.database.tables.table import Table
 
 class IngredientTable(Table):
     columns = {
@@ -50,7 +50,9 @@ class IngredientTable(Table):
         if request['key'] == 'name':
             selection.extend([('alias',"@>",[request['value']])])
         else:
-            selection.extend([('alias',"@>",[results[0]['name']])])
+            ingredient_name = self.select("name", [('id','=',request['value'])])
+            if len(ingredient_name) > 0:
+                selection.extend([('alias',"@>",[ingredient_name[0]])])
         selection.extend(["OR"])
         results = self.format_result(self.select("ALL", selection))
         
@@ -58,10 +60,11 @@ class IngredientTable(Table):
     
     def insert(self, request: dict) -> str:
         request.pop("overwrite_alias", None)
-        for alias in request.get('alias',[]):
-            if alias == request["name"]:
-                request["alias"].remove(alias)
-                self.logger.warning(f"'{alias}' is the same name as the Ingredient. Removing from request")
+        if request.get("alias"):
+            for alias in request.get('alias',[]):
+                if alias == request["name"]:
+                    request["alias"].remove(alias)
+                    self.logger.warning(f"'{alias}' is the same name as the Ingredient. Removing from request")
                 
         return super().insert(request)
     

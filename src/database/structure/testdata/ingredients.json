@@ -1,0 +1,19 @@
+[{
+        "id": "01000000-0000-11f0-909f-0242ac120002",
+        "name": "Ingredient1",
+        "description": "TestIngredient1"
+    },{
+        "id": "02000000-0000-11f0-909f-0242ac120002",
+        "name": "Ingredient2",
+        "description": "TestIngredient2",
+        "alias": ["Ingredient2Alias"]
+    },{
+        "id": "03000000-0000-11f0-909f-0242ac120002",
+        "name": "Ingredient3",
+        "description": "TestIngredient3",
+        "alias": ["Ingredient3Alias1","Ingredient3Alias2"]
+    },{
+        "id": "04000000-0000-11f0-909f-0242ac120002",
+        "name": "Ingredient4",
+        "description": "TestIngredient4"
+    }]

@@ -1,16 +1,15 @@
-from models.recipe_ingredients_model import RecipeIngredientModel
-from models.recipe_model import RecipeModel
-from models.response_model import BaseResponseModel, RecipeResponseModel
-from routers.base_router import Router
+from src.models.recipe_model import RecipeModel
+from src.models.response_model import BaseResponseModel, RecipeResponseModel
+from src.routers.base_router import Router
 
 class Recipe(Router):
     
     def __init__(self):
         super().__init__()
         self.router.add_api_route("/", self.post, methods=["POST"], status_code=201, summary="Add a new or update an existing recipe", response_model=BaseResponseModel, responses={400: {"model": BaseResponseModel}})
-        self.router.add_api_route("/GetRecipesByIngredient", self.get_recipes_by_ingredient, methods=["GET"], status_code=202, summary="Get recipes that include a given ingredient")
+        self.router.add_api_route("/GetRecipesByIngredient", self.get_recipes_by_ingredient, methods=["GET"], status_code=202, summary="Get recipes that include a given ingredient", responses={400: {"model": BaseResponseModel}})
         
-    def get_recipes_by_ingredient(self, ingredient_id: str = None, ingredient: str = None, include_alias : bool = True):
+    def get_recipes_by_ingredient(self, ingredient_id: str = None, ingredient: str = None, include_alias : bool = False):
         self.logger.info(f"Received GET request on {self.name} - get_recipes_by_ingredient")
         self.logger.debug(f"Parameters: {ingredient or ingredient_id}")
         if not ingredient_id and not ingredient:
@@ -22,6 +21,7 @@ class Recipe(Router):
         self.logger.debug(f"Parameters: {recipe},{overwrite_ingredients}")
         request = recipe.model_dump()
         request["overwrite_ingredients"] = overwrite_ingredients
+        request.pop("id")
         return super().redirect_request('Post', request)
 
     def get(self, id: str = None, name: str = None) -> RecipeResponseModel:

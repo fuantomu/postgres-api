@@ -1,6 +1,6 @@
-from models.ingredient_model import IngredientModel
-from models.response_model import BaseResponseModel, IngredientResponseModel
-from routers.base_router import Router
+from src.models.ingredient_model import IngredientModel
+from src.models.response_model import BaseResponseModel, IngredientResponseModel
+from src.routers.base_router import Router
 
 class Ingredient(Router):
     
@@ -13,6 +13,7 @@ class Ingredient(Router):
         self.logger.debug(f"Parameters: {ingredient},{overwrite_alias}")
         request = ingredient.model_dump()
         request["overwrite_alias"] = overwrite_alias
+        request.pop("id")
         return super().redirect_request('Post', request)
     
     def get(self, search_alias : bool = None, id: str = None, name: str = None) -> IngredientResponseModel | BaseResponseModel:

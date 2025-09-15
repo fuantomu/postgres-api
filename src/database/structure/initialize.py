@@ -1,6 +1,8 @@
 import psycopg
-import database.tables as tables
-from logger.log import get_logger
+import src.database.tables as tables
+from src.logger.log import get_logger
+from uuid import UUID
+import json
 
 logger = get_logger("database")
 
@@ -28,57 +30,14 @@ def find_table(table_name: str):
 
 def add_ingredients(connection: psycopg.Connection):
     ingredient_table = tables.IngredientTable(connection, "Ingredient")
-    ingredients = [{
-        "name": "Ingredient1",
-        "description": "TestIngredient1"
-    },{
-        "name": "Ingredient2",
-        "description": "TestIngredient2"
-    },{
-        "name": "Ingredient3",
-        "description": "TestIngredient3"
-    },{
-        "name": "Ingredient4",
-        "description": "TestIngredient4"
-    }]
+    with open(f"src/database/structure/testdata/ingredients.json","r") as f:
+        ingredients = json.load(f)
     for ingredient in ingredients:
         ingredient_table.insert(ingredient)
 
 def add_recipes(connection: psycopg.Connection):
     recipes_table = tables.RecipeTable(connection, "Recipe")
-    recipes = [{
-        "name": "Recipe1",
-        "description": "TestRecipe1",
-        "ingredients": [{
-            "name": "Ingredient1",
-            "quantity": "5"
-        },{
-            "name": "Ingredient4",
-            "quantity": "3"
-        }]
-    },{
-        "name": "Recipe2",
-        "description": "TestRecipe2",
-        "ingredients": [{
-            "name": "Ingredient2",
-            "quantity": "2g"
-        },{
-            "name": "Ingredient3",
-            "quantity": "6g"
-        },{
-            "name": "Ingredient4",
-            "quantity": "34g"
-        }]
-    },{
-        "name": "Recipe3",
-        "description": "TestRecipe3",
-        "ingredients": [{
-            "name": "Ingredient1",
-            "quantity": "20g"
-        },{
-            "name": "Ingredient3",
-            "quantity": "12g"
-        }]
-    }]
+    with open(f"src/database/structure/testdata/recipes.json","r") as f:
+        recipes = json.load(f)
     for recipe in recipes:
         recipes_table.insert(recipe)

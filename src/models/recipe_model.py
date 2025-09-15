@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List
-from models.recipe_ingredients_model import RecipeIngredientModel
+from src.models.recipe_ingredients_model import RecipeIngredientModel
 
 class RecipeModel(BaseModel):
     id: str | None = None

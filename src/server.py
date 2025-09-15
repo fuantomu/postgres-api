@@ -1,21 +1,21 @@
 from fastapi import FastAPI
 import uvicorn
 from os import getenv
-from helper.exception import handle_exception
-import routers
-from logger.log import get_logger
+from src.helper.exception import handle_exception
+import src.routers as routers
+from src.logger.log import get_logger
 import logging
-from database.database import Database
+from src.database.database import Database
 
 
 class Server:
     logger = get_logger("server")
 
-    def __init__(self):
-        self.port = int(getenv("SERVICE_PORT"))
+    def __init__(self, port: int = None, database: str = None):
+        self.port = port or int(getenv("SERVICE_PORT"))
         self.app = FastAPI(title="Cookbook",version="0.1",contact={"name":"fuantomu","email":"fuantomuw@gmail.com"},docs_url='/',root_path="/api")
         self.routers = {}
-        self.database = Database(getenv("POSTGRES_HOST"), getenv("POSTGRES_USERNAME"), getenv("POSTGRES_PASSWORD"), getenv("POSTGRES_DATABASE"))
+        self.database = Database(getenv("POSTGRES_HOST"), getenv("POSTGRES_USERNAME"), getenv("POSTGRES_PASSWORD"), database or getenv("POSTGRES_DATABASE"))
 
     def initialize_logging(self):
         logging.getLogger("asyncio").propagate = False

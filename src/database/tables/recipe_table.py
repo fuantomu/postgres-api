@@ -1,6 +1,6 @@
-from database.tables.recipe_ingredient_table import RecipeIngredientTable
-from database.tables.table import Table
-from models.recipe_model import RecipeModel
+from src.database.tables.recipe_ingredient_table import RecipeIngredientTable
+from src.database.tables.table import Table
+from src.models.recipe_model import RecipeModel
 
 class RecipeTable(Table):
     columns = {
@@ -67,13 +67,14 @@ class RecipeTable(Table):
         if request["include_alias"] and request['key'] == "name":
             ingredients = self.format_result(self.select("ALL", [('alias',"@>",[request["value"]]),(request["key"],"=",request["value"]),"OR"], "ingredient"))
             recipe_ids.extend([("ingredient_id","=",ingredient["id"]) for ingredient in ingredients])
-
+            if len(recipe_ids) == 0:
+                raise Exception(f"No ingredient found for alias '{request['value']}'")
         else:           
             try:
                 ingredient = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])], "ingredient"))[0]
             except IndexError:
                 if len(recipe_ids) == 0:
-                    raise Exception(f"No ingredient found for '{request['value']}'")
+                    raise Exception(f"No ingredient found for {request['key']} '{request['value']}'")
             
             recipe_ids.extend([("ingredient_id","=",ingredient["id"])])
 

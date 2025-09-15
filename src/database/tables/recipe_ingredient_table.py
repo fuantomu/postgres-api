@@ -1,4 +1,4 @@
-from database.tables.table import Table
+from src.database.tables.table import Table
 
 class RecipeIngredientTable(Table):
     columns = {
@@ -48,7 +48,7 @@ class RecipeIngredientTable(Table):
                 ingredient["id"] = result[0][0]
             else:
                 request["ingredients"].remove(ingredient)
-                self.logger.warning(f"No ingredient found for '{ingredient['name']}'")
+                self.logger.warning(f"No ingredient found for {request['key']} '{ingredient['name']}'")
         
         if request["overwrite_ingredients"]:
             self.delete([("recipe_id","=",request["recipe_id"])], "recipeingredient")
