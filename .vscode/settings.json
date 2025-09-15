@@ -9,6 +9,7 @@
         "hoverkraft",
         "levelname",
         "levelno",
+        "PGADMIN",
         "recipeingredient",
         "regclass"
     ],
