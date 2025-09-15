@@ -24,15 +24,15 @@ jobs:
       with:
         compose-file: "./docker-compose.yml"
       env:
-        SERVICE_PORT=1440
-        SERVICE_LOG_LEVEL=info
-        POSTGRES_HOST=localhost
-        POSTGRES_USER=github
-        POSTGRES_PASSWORD=github-pass
-        POSTGRES_DB=github-db
-        POSTGRES_PORT=5432
-        PGADMIN_DEFAULT_EMAIL=github@github.com
-        PGADMIN_DEFAULT_PASSWORD=github-pass
+        SERVICE_PORT: 1440
+        SERVICE_LOG_LEVEL: info
+        POSTGRES_HOST: localhost
+        POSTGRES_USER: github
+        POSTGRES_PASSWORD: github-pass
+        POSTGRES_DB: github-db
+        POSTGRES_PORT: 5432
+        PGADMIN_DEFAULT_EMAIL: github@github.com
+        PGADMIN_DEFAULT_PASSWORD: github-pass
     - name: Set up Python 3.13
       uses: actions/setup-python@v3
       with:
