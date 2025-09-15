@@ -5,11 +5,12 @@ from src.database.structure.initialize import add_ingredients, add_recipes, find
 class Database:
     logger = get_logger("database")
 
-    def __init__(self, host, username, password, database_name):
+    def __init__(self, host, port, username, password, database_name):
         self.host = host
         self.username = username
         self.password = password
         self.database_name = database_name
+        self.port = port
         self.create_if_not_exists()
         self.logger.debug(f"Creating connection to database '{self.database_name}'")
 
@@ -17,7 +18,7 @@ class Database:
         self.logger.info("Opening connection to database")
         self.connection = psycopg.connect(
             host=self.host,
-            port=5432,
+            port=self.port,
             dbname=self.database_name,
             user=self.username,
             password=self.password,
@@ -75,7 +76,7 @@ class Database:
             return new_table.get_functions()[function](request)
         
     def create_if_not_exists(self):
-        with psycopg.connect(dbname="postgres", user=self.username, password=self.password, host=self.host, port=5432, autocommit=True) as conn:
+        with psycopg.connect(dbname="postgres", user=self.username, password=self.password, host=self.host, port=self.port, autocommit=True) as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (self.database_name,))
                 exists = cur.fetchone()
