@@ -26,7 +26,7 @@ class TestIngredientPost(BaseAPITest):
                 self.assertEqual(get_ingredient["alias"],None)
                 self.assertEqual(get_ingredient["id"],ingredient_id)
             else:
-                self.fail(f"Did not get status code {self.post_success_code} - {response.status_code}")
+                self.fail(f"Did not get status code {self.post_success_code} - {get_response.status_code}")
         else:
             self.fail(f"Did not get status code {self.post_success_code} - {response.status_code}")
 
@@ -49,7 +49,7 @@ class TestIngredientPost(BaseAPITest):
                 self.assertEqual(get_ingredient["alias"],request["alias"])
                 self.assertEqual(get_ingredient["id"],ingredient_id)
             else:
-                self.fail(f"Did not get status code {self.post_success_code} - {response.status_code}")
+                self.fail(f"Did not get status code {self.post_success_code} - {get_response.status_code}")
         else:
             self.fail(f"Did not get status code {self.post_success_code} - {response.status_code}")
     
@@ -64,3 +64,62 @@ class TestIngredientPost(BaseAPITest):
             self.assertEqual(f"No name found in request", response_ingredient)
         else:
             self.fail(f"Did not get status code {self.bad_request_error_code} - {response.status_code}")
+    
+    def test_post_positive_update_single_parameters(self):
+        ingredient = self.ingredients[1].copy()
+        new_alias = ["ChangedAlias1","ChangedAlias2"]
+        ingredient["alias"] = new_alias
+
+        response = self.client.post(f"/api/{self.endpoint}/", json=ingredient)
+        if response.status_code == self.post_success_code:
+            response_ingredient = response.json()["Result"]
+            self.assertEqual(f"Updated 'ingredient' with id '{ingredient['id']}'", response_ingredient)
+            response_changed = self.client.get(f"/api/{self.endpoint}/?id={ingredient['id']}")
+            if response_changed.status_code == self.get_success_code:
+                response_changed_ingredient = response_changed.json()["Result"][0]
+                self.assertNotEqual(ingredient['alias'], response_changed_ingredient['alias'])
+                self.assertEqual(ingredient['description'], response_changed_ingredient['description'])
+                for alias in ingredient['alias']:
+                    self.assertIn(alias, response_changed_ingredient['alias'])
+            else:
+                self.fail(f"Did not get status code {self.get_success_code} - {response_changed.status_code}")
+        else:
+            self.fail(f"Did not get status code {self.post_success_code} - {response.status_code}")
+            
+    def test_post_positive_update_all_parameters(self):
+        ingredient = self.ingredients[0].copy()
+        new_description = "Changed Description"
+        ingredient["description"] = new_description
+        new_alias = ["ChangedAlias1","ChangedAlias2"]
+        ingredient["alias"] = new_alias
+
+        response = self.client.post(f"/api/{self.endpoint}/", json=ingredient)
+        if response.status_code == self.post_success_code:
+            response_ingredient = response.json()["Result"]
+            self.assertEqual(f"Updated 'ingredient' with id '{ingredient['id']}'", response_ingredient)
+            response_changed = self.client.get(f"/api/{self.endpoint}/?id={ingredient['id']}")
+            if response_changed.status_code == self.get_success_code:
+                response_changed_ingredient = response_changed.json()["Result"][0]
+                self.assertDictEqual(ingredient, response_changed_ingredient)
+            else:
+                self.fail(f"Did not get status code {self.get_success_code} - {response_changed.status_code}")
+        else:
+            self.fail(f"Did not get status code {self.post_success_code} - {response.status_code}")
+            
+    def test_post_positive_update_alias_overwrite_alias(self):
+        ingredient = self.ingredients[1].copy()
+        new_alias = ["ChangedAlias1","ChangedAlias2"]
+        ingredient["alias"] = new_alias
+
+        response = self.client.post(f"/api/{self.endpoint}/?overwrite_alias=true", json=ingredient)
+        if response.status_code == self.post_success_code:
+            response_ingredient = response.json()["Result"]
+            self.assertEqual(f"Updated 'ingredient' with id '{ingredient['id']}'", response_ingredient)
+            response_changed = self.client.get(f"/api/{self.endpoint}/?id={ingredient['id']}")
+            if response_changed.status_code == self.get_success_code:
+                response_changed_ingredient = response_changed.json()["Result"][0]
+                self.assertEqual(ingredient['alias'], response_changed_ingredient['alias'])
+            else:
+                self.fail(f"Did not get status code {self.get_success_code} - {response_changed.status_code}")
+        else:
+            self.fail(f"Did not get status code {self.post_success_code} - {response.status_code}")
