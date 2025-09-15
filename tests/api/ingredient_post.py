@@ -73,12 +73,14 @@ class TestIngredientPost(BaseAPITest):
         response = self.client.post(f"/api/{self.endpoint}/", json=ingredient)
         if response.status_code == self.post_success_code:
             response_ingredient = response.json()["Result"]
+
             self.assertEqual(f"Updated 'ingredient' with id '{ingredient['id']}'", response_ingredient)
             response_changed = self.client.get(f"/api/{self.endpoint}/?id={ingredient['id']}")
+            
             if response_changed.status_code == self.get_success_code:
                 response_changed_ingredient = response_changed.json()["Result"][0]
-                self.assertNotEqual(ingredient['alias'], response_changed_ingredient['alias'])
                 self.assertEqual(ingredient['description'], response_changed_ingredient['description'])
+                self.assertIn(self.ingredients[1]['alias'][0], response_changed_ingredient['alias'])
                 for alias in ingredient['alias']:
                     self.assertIn(alias, response_changed_ingredient['alias'])
             else:
@@ -107,7 +109,7 @@ class TestIngredientPost(BaseAPITest):
             self.fail(f"Did not get status code {self.post_success_code} - {response.status_code}")
             
     def test_post_positive_update_alias_overwrite_alias(self):
-        ingredient = self.ingredients[1].copy()
+        ingredient = self.ingredients[2].copy()
         new_alias = ["ChangedAlias1","ChangedAlias2"]
         ingredient["alias"] = new_alias
 
@@ -118,6 +120,7 @@ class TestIngredientPost(BaseAPITest):
             response_changed = self.client.get(f"/api/{self.endpoint}/?id={ingredient['id']}")
             if response_changed.status_code == self.get_success_code:
                 response_changed_ingredient = response_changed.json()["Result"][0]
+                self.assertEqual(ingredient['description'], response_changed_ingredient['description'])
                 self.assertEqual(ingredient['alias'], response_changed_ingredient['alias'])
             else:
                 self.fail(f"Did not get status code {self.get_success_code} - {response_changed.status_code}")

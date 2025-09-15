@@ -5,17 +5,20 @@ from tests.api.ingredient_get import TestIngredientGet
 from tests.api.ingredient_post import TestIngredientPost
 from tests.api.recipe_get import TestRecipeGet
 from tests.api.recipe_get_recipes_by_ingredient import TestRecipesGetRecipesByIngredient
+from tests.api.recipe_post import TestRecipePost
 
 def get_test_suite(client):
     suite = unittest.TestSuite()
-    # for method_name in unittest.defaultTestLoader.getTestCaseNames(TestRecipeGet):
-    #    suite.addTest(TestRecipeGet(methodName=method_name, client=client))
-    # for method_name in unittest.defaultTestLoader.getTestCaseNames(TestIngredientGet):
-    #    suite.addTest(TestIngredientGet(methodName=method_name, client=client))
-    # for method_name in unittest.defaultTestLoader.getTestCaseNames(TestRecipesGetRecipesByIngredient):
-    #     suite.addTest(TestRecipesGetRecipesByIngredient(methodName=method_name, client=client))
+    for method_name in unittest.defaultTestLoader.getTestCaseNames(TestRecipeGet):
+       suite.addTest(TestRecipeGet(methodName=method_name, client=client))
+    for method_name in unittest.defaultTestLoader.getTestCaseNames(TestIngredientGet):
+       suite.addTest(TestIngredientGet(methodName=method_name, client=client))
+    for method_name in unittest.defaultTestLoader.getTestCaseNames(TestRecipesGetRecipesByIngredient):
+        suite.addTest(TestRecipesGetRecipesByIngredient(methodName=method_name, client=client))
     for method_name in unittest.defaultTestLoader.getTestCaseNames(TestIngredientPost):
          suite.addTest(TestIngredientPost(methodName=method_name, client=client))
+    for method_name in unittest.defaultTestLoader.getTestCaseNames(TestRecipePost):
+         suite.addTest(TestRecipePost(methodName=method_name, client=client))
     return suite
 
 def init_server():
