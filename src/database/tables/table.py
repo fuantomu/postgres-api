@@ -197,7 +197,7 @@ class Table:
             return self.format_result(self.select("ALL"))
         result = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])]))
         if len(result) == 0:
-            raise Exception(f"No {self.name} found for '{request["value"]}'")
+            raise Exception(f"No {self.name} found for '{request['value']}'")
         return result
     
     def update_functions(self):
@@ -224,7 +224,7 @@ class Table:
         
         if existing_entry:
             request["id"] = existing_entry[0][0]
-            return f"Updated '{self.name}' with id '{self.update(request, [("id","=",request['id'])])}'"
+            return f"Updated '{self.name}' with id '{self.update(request, [('id','=',request['id'])])}'"
         else:
             if not request.get("name"):
                 raise Exception(f"No name found in request")

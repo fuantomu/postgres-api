@@ -27,7 +27,7 @@ class TestRecipesGetRecipesByIngredient(BaseAPITest):
     def test_get_by_name_positive(self):
         for recipe in self.recipes:
             for ingredient in recipe["ingredients"]:
-                response = self.client.get(f"/api/{self.endpoint}/?ingredient={ingredient["name"]}")
+                response = self.client.get(f"/api/{self.endpoint}/?ingredient={ingredient['name']}")
                 if response.status_code == self.get_success_code:
                     response_recipes = response.json()["Result"]
 

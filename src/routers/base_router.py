@@ -26,7 +26,7 @@ class Router:
         return self.redirect_request('Get', {"key": "id" if id else "name", "value": id or name})
     
     def missing_parameters(self, parameters:list[str]) -> Response:
-        return Response(status_code=400, content= f"Missing one or more required parameters in: '{",".join(parameters)}'", media_type="text/plain")
+        return Response(status_code=400, content= f"Missing one or more required parameters in: '{','.join(parameters)}'", media_type="text/plain")
     
     def redirect_request(self, _func : str, request: str|dict) -> JSONResponse | Response:
         self.logger.info("Redirecting request to database")
