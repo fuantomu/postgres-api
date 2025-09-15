@@ -14,7 +14,7 @@ class TestIngredientDelete(BaseAPITest):
         if response.status_code == self.base_success_code:
             response_delete = response.json()["Result"]
             self.assertEqual(f"Deleted ingredient with id '{ingredient['id']}'", response_delete)
-            response_recipes = self.client.get(f"/api/Recipe/RecipesByIngredient/?ingredient_id={ingredient['id']}")
+            response_recipes = self.client.get(f"/api/Recipe/ByIngredient/?ingredient_id={ingredient['id']}")
             if response_recipes.status_code == self.bad_request_error_code:
                 result_recipes = response_recipes.json()["Result"]
                 self.assertEqual(f"No ingredient found for id '{ingredient['id']}'", result_recipes)
@@ -47,7 +47,7 @@ class TestIngredientDelete(BaseAPITest):
         if response.status_code == self.base_success_code:
             response_delete = response.json()["Result"]
             self.assertEqual(f"Deleted ingredient with name '{ingredient['name']}'", response_delete)
-            response_recipes = self.client.get(f"/api/Recipe/RecipesByIngredient/?ingredient={ingredient['name']}")
+            response_recipes = self.client.get(f"/api/Recipe/ByIngredient/?ingredient={ingredient['name']}")
             if response_recipes.status_code == self.bad_request_error_code:
                 result_recipes = response_recipes.json()["Result"]
                 self.assertEqual(f"No ingredient found for name '{ingredient['name']}'", result_recipes)

@@ -5,9 +5,9 @@ from tests.api.ingredient_delete import TestIngredientDelete
 from tests.api.ingredient_get import TestIngredientGet
 from tests.api.ingredient_post import TestIngredientPost
 from tests.api.recipe_delete import TestRecipeDelete
-from tests.api.recipe_delete_ingredients import TestRecipeIngredientsDelete
+from tests.api.recipe_delete_ingredients import TestRecipeIngredientDelete
 from tests.api.recipe_get import TestRecipeGet
-from tests.api.recipe_get_recipes_by_ingredient import TestRecipesRecipesByIngredient
+from tests.api.recipe_get_recipes_by_ingredient import TestRecipesByIngredient
 from tests.api.recipe_post import TestRecipePost
 
 def get_test_suite(client):
@@ -16,8 +16,8 @@ def get_test_suite(client):
        suite.addTest(TestRecipeGet(methodName=method_name, client=client))
     for method_name in unittest.defaultTestLoader.getTestCaseNames(TestIngredientGet):
        suite.addTest(TestIngredientGet(methodName=method_name, client=client))
-    for method_name in unittest.defaultTestLoader.getTestCaseNames(TestRecipesRecipesByIngredient):
-        suite.addTest(TestRecipesRecipesByIngredient(methodName=method_name, client=client))
+    for method_name in unittest.defaultTestLoader.getTestCaseNames(TestRecipesByIngredient):
+        suite.addTest(TestRecipesByIngredient(methodName=method_name, client=client))
     for method_name in unittest.defaultTestLoader.getTestCaseNames(TestIngredientPost):
          suite.addTest(TestIngredientPost(methodName=method_name, client=client))
     for method_name in unittest.defaultTestLoader.getTestCaseNames(TestRecipePost):
@@ -26,8 +26,8 @@ def get_test_suite(client):
          suite.addTest(TestIngredientDelete(methodName=method_name, client=client))
     for method_name in unittest.defaultTestLoader.getTestCaseNames(TestRecipeDelete):
          suite.addTest(TestRecipeDelete(methodName=method_name, client=client))
-    for method_name in unittest.defaultTestLoader.getTestCaseNames(TestRecipeIngredientsDelete):
-         suite.addTest(TestRecipeIngredientsDelete(methodName=method_name, client=client))
+    for method_name in unittest.defaultTestLoader.getTestCaseNames(TestRecipeIngredientDelete):
+         suite.addTest(TestRecipeIngredientDelete(methodName=method_name, client=client))
     return suite
 
 def init_server():

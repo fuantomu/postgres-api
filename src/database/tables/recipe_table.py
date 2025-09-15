@@ -126,7 +126,7 @@ class RecipeTable(Table):
         self.logger.debug(f"Updating function calls for {self.name}")
         self.set_function("Post", self.add_or_update)
         self.set_function("Get", self.get)
-        self.set_function("RecipesByIngredient", self.get_recipes_by_ingredient)
+        self.set_function("ByIngredient", self.get_recipes_by_ingredient)
         self.set_function("Delete", self.delete_entry)
         self.set_function("DeleteIngredients", self.delete_ingredients)
 
