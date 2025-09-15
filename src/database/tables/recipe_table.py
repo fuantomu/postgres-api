@@ -38,6 +38,8 @@ class RecipeTable(Table):
     
     def get(self, request : str|dict):
         output : list[RecipeModel] = super().get(request)
+        if len(output) == 0:
+            raise Exception(f"No recipe found for {request['key']} '{request['value']}'")
         recipe_ingredients = self.select(["recipe_id","ingredient_id","name","quantity"],[("recipe_id","=",x) for x in output].extend(["OR"]),"recipeingredient", "ingredient ON id = ingredient_id")
         for recipe in output:
             current_recipe_ingredients = [ingredient for ingredient in recipe_ingredients if str(ingredient[0]) == recipe["id"]]
@@ -87,14 +89,46 @@ class RecipeTable(Table):
         for recipe_id in recipe_ids:
             output.extend(self.get({"key": "id", "value": str(recipe_id[0])}))
 
-        return output       
+        return output     
+
+    def delete_entry(self, request):
+        found_recipe = self.select("id",[(request["key"],'=',request['value'])])
+        if len(found_recipe) == 0:
+            raise Exception(f"No recipe found for {request['key']} '{request['value']}'")
+        
+        recipe_id = found_recipe[0][0]
+        
+        self.delete([('recipe_id','=',recipe_id)], 'recipeingredient')
+        return super().delete_entry(request)
+    
+    def delete_ingredients(self, request):
+        found_recipe = self.select("id",[(request["key"],'=',request['value'])])
+        if len(found_recipe) == 0:
+            raise Exception(f"No recipe found for {request['key']} '{request['value']}'")
+        if len(request['ingredients']) == 0:
+            raise Exception(f"No ingredients found in request")
+        errors = []
+        for ingredient in request['ingredients']:
+            found_ingredient = self.select("id",[("id" if ingredient['id'] else "name",'=',ingredient['id'] if ingredient['id'] else ingredient['name'])], "ingredient")
+            if found_ingredient:
+                ingredient["id"] = found_ingredient[0][0]
+                where = [('recipe_id','=',found_recipe[0][0]),('ingredient_id','=',ingredient['id']),"AND"]
+                self.delete(where, "recipeingredient")
+            else:
+                errors.append(ingredient["id" if ingredient['id'] else "name"])
+        if len(errors) == len(request['ingredients']):
+            raise Exception(f"No ingredients found for {"id" if ingredient['id'] else "name"} '{','.join(errors)}'")
+        else:
+            return f"Deleted ingredients '{','.join([ingredient['name'] for ingredient in request['ingredients'] if ingredient['id'] not in errors])}' for recipe with {request['key']} '{request['value']}'"
 
         
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")
         self.set_function("Post", self.add_or_update)
         self.set_function("Get", self.get)
-        self.set_function("GetRecipesByIngredient", self.get_recipes_by_ingredient)
+        self.set_function("RecipesByIngredient", self.get_recipes_by_ingredient)
+        self.set_function("Delete", self.delete_entry)
+        self.set_function("DeleteIngredients", self.delete_ingredients)
 
     
 

@@ -30,11 +30,11 @@ class TestIngredientGet(BaseAPITest):
     def test_get_by_id_negative_unknown_id(self):
         test_id = '02000000-0000-11f0-909f-0242ac120007'
         response = self.client.get(f"/api/{self.endpoint}/?id={test_id}")
-        if response.status_code == self.get_success_code:
+        if response.status_code == self.bad_request_error_code:
             response_ingredient = response.json()["Result"]
-            self.assertEqual([], response_ingredient)
+            self.assertEqual(f"No ingredient found for id '{test_id}'", response_ingredient)
         else:
-            self.fail(f"Did not get status code {self.get_success_code} - {response.status_code}")
+            self.fail(f"Did not get status code {self.bad_request_error_code} - {response.status_code}")
 
     def test_get_by_name_positive(self):
         for ingredient in self.ingredients:
@@ -49,11 +49,11 @@ class TestIngredientGet(BaseAPITest):
     def test_get_by_name_negative_unknown_name(self):
         test_name = 'Ingredient1000'
         response = self.client.get(f"/api/{self.endpoint}/?name={test_name}")
-        if response.status_code == self.get_success_code:
+        if response.status_code == self.bad_request_error_code:
             response_ingredient = response.json()["Result"]
-            self.assertEqual([], response_ingredient)
+            self.assertEqual(f"No ingredient found for name '{test_name}'", response_ingredient)
         else:
-            self.fail(f"Did not get status code {self.get_success_code} - {response.status_code}")
+            self.fail(f"Did not get status code {self.bad_request_error_code} - {response.status_code}")
 
     def test_get_all(self):
         response = self.client.get(f"/api/{self.endpoint}/")

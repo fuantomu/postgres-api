@@ -1,6 +1,7 @@
 import unittest
 
 class BaseAPITest(unittest.TestCase):
+    base_success_code = 200
     get_success_code = 202
     post_success_code = 201
     bad_request_error_code = 400

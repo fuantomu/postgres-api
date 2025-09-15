@@ -23,7 +23,7 @@ class TestRecipeGet(BaseAPITest):
         response = self.client.get(f"/api/{self.endpoint}/?id={test_id}")
         if response.status_code == self.bad_request_error_code:
             response_recipe = response.json()["Result"]
-            self.assertEqual(f"No recipe found for '{test_id}'", response_recipe)
+            self.assertEqual(f"No recipe found for id '{test_id}'", response_recipe)
         else:
             self.fail(f"Did not get status code {self.bad_request_error_code} - {response.status_code}")
     
@@ -46,12 +46,12 @@ class TestRecipeGet(BaseAPITest):
             else:
                 self.fail(f"Did not get status code {self.get_success_code} - {response.status_code}")
 
-    def test_get_by_id_negative_unknown_name(self):
+    def test_get_by_name_negative_unknown_name(self):
         test_name = 'Recipe1000'
         response = self.client.get(f"/api/{self.endpoint}/?name={test_name}")
         if response.status_code == self.bad_request_error_code:
             response_recipe = response.json()["Result"]
-            self.assertEqual(f"No recipe found for '{test_name}'", response_recipe)
+            self.assertEqual(f"No recipe found for name '{test_name}'", response_recipe)
         else:
             self.fail(f"Did not get status code {self.bad_request_error_code} - {response.status_code}")
 

@@ -1,10 +1,10 @@
 from tests.api.base_test import BaseAPITest
 import json
 
-class TestRecipesGetRecipesByIngredient(BaseAPITest):
+class TestRecipesRecipesByIngredient(BaseAPITest):
     def __init__(self, methodName="runTest", client=None):
         super().__init__(methodName, client)
-        self.endpoint = "Recipe/GetRecipesByIngredient"
+        self.endpoint = "Recipe/RecipesByIngredient"
         self.ingredient_recipes = {}
         with open(f"src/database/structure/testdata/recipes.json","r") as f:
             self.recipes = json.load(f)

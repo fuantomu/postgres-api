@@ -16,6 +16,7 @@ class Table:
         self.schema = "public"
         self.functions["Post"] = self.add_or_update
         self.functions["Get"] = self.get
+        self.functions["Delete"] = self.delete_entry
 
     def exists(self, table_name: str = None):
         with self.connection.cursor() as cursor:
@@ -122,6 +123,7 @@ class Table:
                     cursor.execute(query,params)
                 else:
                     cursor.execute(query)
+                cursor.connection.commit()
             except Exception as e:
                 raise e
 
@@ -196,8 +198,7 @@ class Table:
         if not request["value"]:
             return self.format_result(self.select("ALL"))
         result = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])]))
-        if len(result) == 0:
-            raise Exception(f"No {self.name} found for '{request['value']}'")
+        
         return result
     
     def update_functions(self):
@@ -220,9 +221,8 @@ class Table:
             raise Exception(f"No name found in request")
         
         existing_entry = self.select("ALL", [(key,"=",request[key])])
-        self.logger.info(f"Found existing entry {existing_entry}")
-        
         if existing_entry:
+            self.logger.info(f"Found existing entry {existing_entry}")
             request["id"] = existing_entry[0][0]
             return f"Updated '{self.name}' with id '{self.update(request, [('id','=',request['id'])])}'"
         else:
@@ -245,3 +245,7 @@ class Table:
         for idx,item in enumerate(where):
             params[f"{item[0]}_{idx}"] = item[2]
         return query,params
+    
+    def delete_entry(self, request: dict):
+        self.delete([(request['key'],'=',request['value'])])
+        return f"Deleted {self.name} with {request['key']} '{request['value']}'"

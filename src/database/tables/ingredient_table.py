@@ -43,7 +43,10 @@ class IngredientTable(Table):
         if not request["value"]:
             return Table.get(self, request)
         if not request["search_alias"]:
-            return self.format_result(self.select("ALL", [(request["key"],"=",request["value"])]))
+            result = self.format_result(self.select("ALL", [(request["key"],"=",request["value"])]))
+            if len(result) == 0:
+                raise Exception(f"No ingredient found for {request['key']} '{request['value']}'")
+            return result
         
         results = []
         selection = [(request["key"],"=",request["value"])]
@@ -75,10 +78,21 @@ class IngredientTable(Table):
         if list(request.keys()) == ["name","id"]:
             return str(request['id'])
         return super().update(request, where, "ingredient")
+    
+    def delete_entry(self, request):
+        found_ingredient = self.select("id",[(request["key"],'=',request['value'])])
+        if len(found_ingredient) == 0:
+            raise Exception(f"No ingredient found for {request['key']} '{request['value']}'")
+        
+        ingredient_id = found_ingredient[0][0]
+        
+        self.delete([('ingredient_id','=',ingredient_id)], 'recipeingredient')
+        return super().delete_entry(request)
 
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")
         self.set_function("Get", self.get)
         self.set_function("Post", self.add_or_update)
+        self.set_function("Delete", self.delete_entry)
 
     
