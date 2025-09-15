@@ -19,20 +19,21 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Make envfile
+      uses: SpicyPizza/create-envfile@v2.0
+      with:
+        envkey_SERVICE_PORT: 1440
+        envkey_SERVICE_LOG_LEVEL: "info"
+        envkey_POSTGRES_HOST: "localhost"
+        envkey_POSTGRES_USER: "github"
+        envkey_POSTGRES_PASSWORD: "github-pass"
+        envkey_POSTGRES_DB: "github-db"
+        envkey_POSTGRES_PORT: 5432
+        file_name: .env.local
     - name: Run docker compose
       uses: hoverkraft-tech/compose-action@v2.0.1
       with:
         compose-file: "./docker-compose-git.yml"
-      env:
-        SERVICE_PORT: 1440
-        SERVICE_LOG_LEVEL: info
-        POSTGRES_HOST: localhost
-        POSTGRES_USER: github
-        POSTGRES_PASSWORD: github-pass
-        POSTGRES_DB: github-db
-        POSTGRES_PORT: 5432
-        PGADMIN_DEFAULT_EMAIL: github@github.com
-        PGADMIN_DEFAULT_PASSWORD: github-pass
     - name: Set up Python 3.13
       uses: actions/setup-python@v3
       with:
