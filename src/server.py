@@ -15,7 +15,7 @@ class Server:
         self.port = port or int(getenv("SERVICE_PORT"))
         self.app = FastAPI(title="Cookbook",version="0.1",contact={"name":"fuantomu","email":"fuantomuw@gmail.com"},docs_url='/',root_path="/api")
         self.routers = {}
-        self.database = Database(getenv("POSTGRES_HOST"), getenv("POSTGRES_USERNAME"), getenv("POSTGRES_PASSWORD"), database or getenv("POSTGRES_DATABASE"))
+        self.database = Database(getenv("POSTGRES_HOST"), getenv("POSTGRES_USER"), getenv("POSTGRES_PASSWORD"), database or getenv("POSTGRES_DB"))
 
     def initialize_logging(self):
         logging.getLogger("asyncio").propagate = False
