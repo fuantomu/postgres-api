@@ -65,7 +65,7 @@ class TestIngredientPost(BaseAPITest):
         else:
             self.fail(f"Did not get status code {self.bad_request_error_code} - {response.status_code}")
     
-    def test_post_positive_update_single_parameters(self):
+    def test_post_positive_update_single_parameter(self):
         ingredient = self.ingredients[1].copy()
         new_alias = ["ChangedAlias1","ChangedAlias2"]
         ingredient["alias"] = new_alias
