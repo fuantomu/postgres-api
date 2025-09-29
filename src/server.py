@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from os import getenv
 from src.helper.exception import handle_exception
@@ -10,6 +11,10 @@ from src.database.database import Database
 
 class Server:
     logger = get_logger("server")
+    origins = [
+        "http://localhost",
+        "http://localhost:5173",
+    ]
 
     def __init__(self, port: int = None, database: str = None):
         self.port = port or int(getenv("SERVICE_PORT"))
@@ -19,6 +24,13 @@ class Server:
             contact={"name": "fuantomu", "email": "fuantomuw@gmail.com"},
             docs_url="/",
             root_path="/api",
+        )
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=self.origins,
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "DELETE"],
+            allow_headers=["*"],
         )
         self.routers = {}
         self.database = Database(
