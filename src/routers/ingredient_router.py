@@ -22,7 +22,6 @@ class Ingredient(Router):
         self.logger.debug(f"Parameters: {ingredient},{overwrite_alias}")
         request = ingredient.model_dump()
         request["overwrite_alias"] = overwrite_alias
-        request.pop("id")
         for key in request.copy().keys():
             if request[key] is None:
                 request.pop(key)

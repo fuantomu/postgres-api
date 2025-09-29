@@ -175,7 +175,7 @@ class Table:
                             psycopg.sql.Identifier(k), psycopg.sql.Placeholder(k)
                         )
                         for k in request.keys()
-                        if k != "id" and k != "name"
+                        if k != "id"
                     ]
                 )
 
@@ -258,7 +258,9 @@ class Table:
         existing_entry = self.select("ALL", [(key, "=", request[key])])
         if existing_entry:
             self.logger.info(f"Found existing entry {existing_entry}")
-            request["id"] = existing_entry[0][0]
+
+            if not request.get("id"):
+                request["id"] = existing_entry[0][0]
             return f"Updated '{self.name}' with id '{self.update(request, [('id', '=', request['id'])])}'"
         else:
             if not request.get("name"):

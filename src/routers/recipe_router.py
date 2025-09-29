@@ -60,7 +60,6 @@ class Recipe(Router):
         self.logger.debug(f"Parameters: {recipe},{overwrite_ingredients}")
         request = recipe.model_dump()
         request["overwrite_ingredients"] = overwrite_ingredients
-        request.pop("id")
         for key in request.copy().keys():
             if request[key] is None:
                 request.pop(key)
