@@ -18,21 +18,33 @@ class RecipeIngredientTable(Table):
     def insert_recipe_ingredient(self, request: dict) -> None:
         ingredients = []
         for ingredient in request["ingredients"]:
-            if ingredient["name"]:
-                ingredients.extend([("name", "=", ingredient["name"])])
-            else:
+            if ingredient.get("id"):
                 ingredients.extend([("id", "=", ingredient["id"])])
+                ingredient["key"] = "id"
+            else:
+                ingredients.extend([("name", "=", ingredient["name"])])
+                ingredient["key"] = "name"
         ingredients.append("OR")
-        ingredients = self.select("id", ingredients, "ingredient")
+        ingredients = self.select(["id", "name"], ingredients, "ingredient")
 
-        recipe_ingredient_requests = [
-            {
-                "recipe_id": request["recipe_id"],
-                "ingredient_id": ingredient[0],
-                "quantity": request["ingredients"][idx]["quantity"],
-            }
-            for idx, ingredient in enumerate(ingredients)
-        ]
+        recipe_ingredient_requests = []
+        for ingredient in ingredients:
+            recipe_ingredient_requests.append(
+                {
+                    "recipe_id": request["recipe_id"],
+                    "ingredient_id": ingredient[0],
+                    "quantity": [
+                        _ingredient["quantity"]
+                        for _ingredient in request["ingredients"]
+                        if _ingredient[_ingredient["key"]]
+                        == (
+                            ingredient[0]
+                            if _ingredient["key"] == "id"
+                            else ingredient[1]
+                        )
+                    ][0],
+                }
+            )
 
         for _request in recipe_ingredient_requests:
             Table.insert(self, _request, "recipeingredient", "recipe_id")
@@ -42,12 +54,12 @@ class RecipeIngredientTable(Table):
             return RecipeIngredientTable.delete(
                 self, [("recipe_id", "=", request["recipe_id"])], "recipeingredient"
             )
-        for ingredient in request["ingredients"].copy():
+        for idx, ingredient in enumerate(request["ingredients"].copy()):
             result = self.select(
                 "id", [("name", "=", ingredient["name"])], "ingredient"
             )
             if result:
-                ingredient["id"] = result[0][0]
+                request["ingredients"][idx]["id"] = result[0][0]
             else:
                 request["ingredients"].remove(ingredient)
                 self.logger.warning(f"No recipe found for '{ingredient['name']}'")
@@ -60,6 +72,7 @@ class RecipeIngredientTable(Table):
             [("recipe_id", "=", request["recipe_id"])],
             "recipeingredient",
         )
+
         for new_ingredient in request["ingredients"].copy():
             for existing_ingredient in existing_ingredients:
                 if new_ingredient["id"] == existing_ingredient[0]:
@@ -70,7 +83,7 @@ class RecipeIngredientTable(Table):
                             {"quantity": new_ingredient["quantity"]},
                             [
                                 ("recipe_id", "=", request["recipe_id"]),
-                                ("ingredient_id", "=", existing_ingredient[0]),
+                                ("ingredient_id", "=", new_ingredient["id"]),
                                 "AND",
                             ],
                             "recipeingredient",

@@ -166,12 +166,15 @@ class TestRecipePost(BaseAPITest):
             get_response = self.client.get(f"/api/{self.endpoint}/?id={recipe_id}")
             if get_response.status_code == self.get_success_code:
                 get_recipe = get_response.json()["Result"][0]
+                self.recipes[1]["ingredients"].append(request["ingredients"][1])
                 self.assertEqual(get_recipe["name"], request["name"])
                 self.assertEqual(get_recipe["description"], request["description"])
-                self.recipes[1]["ingredients"].append(request["ingredients"][1])
-                for ingredient in get_recipe["ingredients"]:
-                    if ingredient["name"] == request["ingredients"][0]["name"]:
-                        self.assertEqual(ingredient, request["ingredients"][0])
+                self.assertEqual(
+                    get_recipe["ingredients"][2], request["ingredients"][0]
+                )
+                self.assertEqual(
+                    get_recipe["ingredients"][3], request["ingredients"][1]
+                )
                 self.assertEqual(
                     len(get_recipe["ingredients"]), len(self.recipes[1]["ingredients"])
                 )
