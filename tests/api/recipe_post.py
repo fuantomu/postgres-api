@@ -288,3 +288,35 @@ class TestRecipePost(BaseAPITest):
             self.fail(
                 f"Did not get status code {self.post_success_code} - {response.status_code}"
             )
+
+    def test_post_positive_update_overwrite_ingredients_no_ingredients(self):
+        request = {
+            "name": self.recipes[3]["name"],
+        }
+        response = self.client.post(
+            f"/api/{self.endpoint}/?overwrite_ingredients=true", json=request
+        )
+        if response.status_code == self.post_success_code:
+            response_recipe = response.json()["Result"]
+            recipe_id = re.search(
+                r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
+                response_recipe,
+            ).group()
+            self.assertEqual(f"Updated 'recipe' with id '{recipe_id}'", response_recipe)
+            get_response = self.client.get(f"/api/{self.endpoint}/?id={recipe_id}")
+            if get_response.status_code == self.get_success_code:
+                get_recipe = get_response.json()["Result"][0]
+                self.assertEqual(get_recipe["name"], request["name"])
+                self.assertEqual(
+                    get_recipe["description"], self.recipes[3]["description"]
+                )
+                self.assertEqual(get_recipe["ingredients"], [])
+                self.assertEqual(get_recipe["id"], recipe_id)
+            else:
+                self.fail(
+                    f"Did not get status code {self.post_success_code} - {get_response.status_code}"
+                )
+        else:
+            self.fail(
+                f"Did not get status code {self.post_success_code} - {response.status_code}"
+            )
