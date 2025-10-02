@@ -11,15 +11,12 @@ from src.database.database import Database
 
 class Server:
     logger = get_logger("server")
-    origins = [
-        "http://localhost",
-        "http://localhost:5173",
-    ]
+    origins = getenv("SERVICE_ORIGINS")
 
     def __init__(self, port: int = None, database: str = None):
         self.port = port or int(getenv("SERVICE_PORT"))
         self.app = FastAPI(
-            title="Cookbook",
+            title="FastAPI",
             version="0.1",
             contact={"name": "fuantomu", "email": "fuantomuw@gmail.com"},
             docs_url="/",
