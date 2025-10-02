@@ -16,7 +16,7 @@ class Server:
     def __init__(self, port: int = None, database: str = None):
         self.port = port or int(getenv("SERVICE_PORT"))
         self.app = FastAPI(
-            title="FastAPI",
+            title="Armory",
             version="0.1",
             contact={"name": "fuantomu", "email": "fuantomuw@gmail.com"},
             docs_url="/",
@@ -45,8 +45,8 @@ class Server:
         self.uvicorn_logger = get_logger("uvicorn.error")
 
     def initialize_endpoints(self):
-        self.routers["Recipe"] = routers.Recipe()
-        self.routers["Ingredient"] = routers.Ingredient()
+        self.routers["Guild"] = routers.Guild()
+        self.routers["Character"] = routers.Character()
 
         for key, value in self.routers.items():
             self.app.include_router(value.router, prefix=f"/{key}", tags=[key])
@@ -62,10 +62,6 @@ class Server:
         with self.database as d:
             d.drop_tables()
 
-    def test_data(self):
-        with self.database as d:
-            d.add_test_data()
-
     def run(self):
         self.logger.info(f"Running on port {self.port}")
         uvicorn.run(
@@ -78,9 +74,7 @@ if __name__ == "__main__":
     server.initialize_endpoints()
     server.initialize_logging()
     try:
-        server.clean_database()
         server.initialize_database()
-        server.test_data()
     except Exception as e:
         server.logger.exception(handle_exception(e))
         server.logger.info("Exiting program")

@@ -1,16 +1,16 @@
 from typing import List
 from pydantic import BaseModel
-from src.models.ingredient_model import IngredientModel
-from src.models.recipe_model import RecipeModel
+from src.models.character import CharacterModel
+from src.models.guild import GuildModel
 
 
 class BaseResponseModel(BaseModel):
     Result: str
 
 
-class IngredientResponseModel(BaseModel):
-    Result: IngredientModel | List[IngredientModel]
+class CharacterResponseModel(BaseModel):
+    Result: CharacterModel | List[CharacterModel]
 
 
-class RecipeResponseModel(BaseModel):
-    Result: RecipeModel | List[RecipeModel]
+class GuildResponseModel(BaseModel):
+    Result: GuildModel | List[GuildModel]

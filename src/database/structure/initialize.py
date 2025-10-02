@@ -1,7 +1,6 @@
 import psycopg
 import src.database.tables as tables
 from src.logger.log import get_logger
-import json
 
 logger = get_logger("database")
 
@@ -28,19 +27,3 @@ def find_table(table_name: str):
         if _class.__name__.lower() == table_name.lower():
             return _class
     return None
-
-
-def add_ingredients(connection: psycopg.Connection):
-    ingredient_table = tables.IngredientTable(connection, "Ingredient")
-    with open("src/database/structure/testdata/ingredients.json", "r") as f:
-        ingredients = json.load(f)
-    for ingredient in ingredients:
-        ingredient_table.insert(ingredient)
-
-
-def add_recipes(connection: psycopg.Connection):
-    recipes_table = tables.RecipeTable(connection, "Recipe")
-    with open("src/database/structure/testdata/recipes.json", "r") as f:
-        recipes = json.load(f)
-    for recipe in recipes:
-        recipes_table.insert(recipe)

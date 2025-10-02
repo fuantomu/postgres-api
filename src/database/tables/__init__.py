@@ -1,7 +1,8 @@
-from .ingredient_table import IngredientTable
+from .character_table import CharacterTable
+from .guild_table import GuildTable
 from .table import Table
-from .recipe_table import RecipeTable
-from .recipe_ingredient_table import RecipeIngredientTable
+from .characteritem_table import CharacterItemTable
+from .characterspec_table import CharacterSpecTable
 
 
-__all__ = ["ingredient", "table", "recipe", "recipeingredient"]
+__all__ = ["guild", "character", "characteritem", "characterspec", "table"]
