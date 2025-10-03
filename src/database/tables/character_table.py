@@ -5,7 +5,7 @@ from src.database.tables.guild_table import GuildTable
 from src.database.tables.table import Table
 from src.models.character import CharacterEquipmentModel
 from src.models.item import ItemModel
-from src.models.specialization import SpecializationModel
+from src.models.specialization import GlyphModel, SpecializationModel, TalentModel
 
 
 class CharacterTable(Table):
@@ -134,6 +134,9 @@ class CharacterTable(Table):
         return items
 
     def get_specialization(self, request: str | dict):
+        from src.helper.glyphs import glyphs
+        from src.helper.talents import talents
+
         selection = [(request["key"], "=", request["value"])]
         if request["key"] == "name":
             if not request.get("realm"):
@@ -155,8 +158,22 @@ class CharacterTable(Table):
             current_spec = SpecializationModel().model_dump()
             current_spec["id"] = spec[0]
             current_spec["name"] = spec[1]
-            current_spec["talents"] = spec[2]
-            current_spec["glyphs"] = spec[3]
+            current_spec["talents"] = []
+            for talent in spec[2]:
+                temp_talent = TalentModel().model_dump()
+                temp_talent["id"] = talent
+                temp_talent["name"] = talents[talent]["name"]
+                current_spec["talents"].append(temp_talent)
+            current_spec["glyphs"] = []
+            for glyph in spec[3]:
+                temp_glyph = GlyphModel().model_dump()
+                temp_glyph["id"] = glyph
+                temp_glyph["name"] = [
+                    found_glyph["name"]
+                    for found_glyph in glyphs.values()
+                    if found_glyph["id"] == glyph
+                ][0]
+                current_spec["glyphs"].append(temp_glyph)
             current_spec["active"] = spec[4]
             specialization.append(current_spec)
         return specialization
