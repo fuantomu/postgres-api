@@ -52,7 +52,7 @@ class CharacterModel(BaseModel):
 class CharacterEquipmentModel(BaseModel):
     head: ItemModel | None = None
     neck: ItemModel | None = None
-    shoulder: ItemModel | None = None
+    shoulders: ItemModel | None = None
     shirt: ItemModel | None = None
     chest: ItemModel | None = None
     waist: ItemModel | None = None

@@ -9,7 +9,7 @@ class ItemModel(BaseModel):
     slot: Literal[
         "Head",
         "Neck",
-        "Shoulder",
+        "Shoulders",
         "Back",
         "Chest",
         "Shirt",
