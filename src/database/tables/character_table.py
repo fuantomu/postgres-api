@@ -74,6 +74,30 @@ class CharacterTable(Table):
                 CharacterSpecTable.add_or_update(self, talent)
         return "Success"
 
+    def add_or_update(self, request):
+        if not request.get("id"):
+            request["id"] = self.select("MAX(id)", [], "character")[0][0] + 1
+
+        found_item = self.select(
+            "id",
+            [("name", "=", request["name"]), ("realm", "=", request["realm"]), "AND"],
+            "character",
+        )
+        if found_item:
+            self.update(
+                request,
+                [
+                    ("name", "=", request["name"]),
+                    ("realm", "=", request["realm"]),
+                    "AND",
+                ],
+                "character",
+            )
+        else:
+            self.insert(request, "character")
+            return f"{request['id']}"
+        return "Success"
+
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")
         self.set_function("Get", self.get)

@@ -102,6 +102,11 @@ class Table:
                         query = psycopg.sql.SQL("SELECT * FROM {table}").format(
                             table=psycopg.sql.Identifier(table_name)
                         )
+                    elif request.startswith("MAX"):
+                        query = psycopg.sql.SQL("SELECT {field} FROM {table}").format(
+                            field=psycopg.sql.SQL(request),
+                            table=psycopg.sql.Identifier(table_name),
+                        )
                     else:
                         query = psycopg.sql.SQL("SELECT {field} FROM {table}").format(
                             field=psycopg.sql.Identifier(request),
