@@ -180,7 +180,6 @@ class Table:
                             psycopg.sql.Identifier(k), psycopg.sql.Placeholder(k)
                         )
                         for k in request.keys()
-                        if k != "id"
                     ]
                 )
 
@@ -190,8 +189,6 @@ class Table:
 
                 params = {}
                 for k in request.keys():
-                    if k == "id":
-                        continue
                     params[k] = request[k]
 
                 if where:

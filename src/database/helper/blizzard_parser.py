@@ -96,7 +96,6 @@ class CharacterParser(BlizzardParser):
             headers=self.headers,
         ).json()
         character_template = CharacterModel().model_dump()
-
         character_template["id"] = character["id"]
         character_template["name"] = character["name"]
         character_template["gender"] = character["gender"]["name"]
