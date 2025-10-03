@@ -7,8 +7,8 @@ class CharacterSpecTable(Table):
             "value": "INTEGER NOT NULL REFERENCES character(id)",
         },
         "name": {"value": "varchar(80) NOT NULL", "default": "'Unknown'"},
-        "talents": {"value": "TEXT NOT NULL", "default": ""},
-        "glyphs": {"value": "TEXT NOT NULL", "default": ""},
+        "talents": {"value": "INTEGER[] NOT NULL", "default": ""},
+        "glyphs": {"value": "INTEGER[] NOT NULL", "default": ""},
         "active": {"value": "BOOLEAN", "default": "'TRUE'"},
         "PRIMARY KEY": {"value": "(id,name)", "default": ""},
     }

@@ -24,9 +24,17 @@ class Guild(Router):
         for key in request.copy().keys():
             if request[key] is None:
                 request.pop(key)
+        request["name"] = request["name"].lower().capitalize()
+        request["realm"] = request["realm"].lower().capitalize()
         return super().redirect_request("Post", request)
 
-    def get(self, id: str = None, name: str = None) -> GuildResponseModel:
+    def get(
+        self, id: str = None, name: str = None, realm: str = None
+    ) -> GuildResponseModel:
+        if name:
+            name = name.lower().capitalize()
+        if realm:
+            realm = realm.lower().capitalize()
         return super().redirect_request(
-            "Get", {"key": "id" if id else "name", "value": id or name}
+            "Get", {"key": "id" if id else "name", "value": id or name, "realm": realm}
         )

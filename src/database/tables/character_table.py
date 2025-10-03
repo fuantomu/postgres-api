@@ -3,6 +3,9 @@ from src.database.tables.characteritem_table import CharacterItemTable
 from src.database.tables.characterspec_table import CharacterSpecTable
 from src.database.tables.guild_table import GuildTable
 from src.database.tables.table import Table
+from src.models.character import CharacterEquipmentModel
+from src.models.item import ItemModel
+from src.models.specialization import SpecializationModel
 
 
 class CharacterTable(Table):
@@ -33,6 +36,10 @@ class CharacterTable(Table):
 
         results = []
         selection = [(request["key"], "=", request["value"])]
+        if request["key"] == "name":
+            if not request.get("realm"):
+                raise Exception("No realm set in request")
+            selection.append(("realm", "=", request["realm"]))
         results = self.format_result(self.select("ALL", selection))
 
         return results
@@ -98,8 +105,66 @@ class CharacterTable(Table):
             return f"{request['id']}"
         return "Success"
 
+    def get_equipment(self, request: str | dict):
+        selection = [(request["key"], "=", request["value"])]
+        if request["key"] == "name":
+            if not request.get("realm"):
+                raise Exception("No realm set in request")
+            selection.append(("realm", "=", request["realm"]))
+            selection.append("AND")
+
+        found_character = self.select("id", selection)
+        if len(found_character) == 0:
+            raise Exception(
+                f"No character found for {request['key']} '{request['value']}'"
+            )
+
+        items = CharacterEquipmentModel().model_dump()
+        found_items = self.select(
+            "ALL", [("character_id", "=", found_character[0][0])], "characteritem"
+        )
+        for item in found_items:
+            items[item[3].lower().replace(" ", "_")] = ItemModel().model_dump()
+            items[item[3].lower().replace(" ", "_")]["character_id"] = item[0]
+            items[item[3].lower().replace(" ", "_")]["id"] = item[1]
+            items[item[3].lower().replace(" ", "_")]["name"] = item[2]
+            items[item[3].lower().replace(" ", "_")]["slot"] = item[3]
+            items[item[3].lower().replace(" ", "_")]["quality"] = item[4]
+            items[item[3].lower().replace(" ", "_")]["wowhead_link"] = item[5]
+        return items
+
+    def get_specialization(self, request: str | dict):
+        selection = [(request["key"], "=", request["value"])]
+        if request["key"] == "name":
+            if not request.get("realm"):
+                raise Exception("No realm set in request")
+            selection.append(("realm", "=", request["realm"]))
+            selection.append("AND")
+
+        found_character = self.select("id", selection)
+        if len(found_character) == 0:
+            raise Exception(
+                f"No character found for {request['key']} '{request['value']}'"
+            )
+
+        specialization = []
+        found_specialization = self.select(
+            "ALL", [("id", "=", found_character[0][0])], "characterspec"
+        )
+        for spec in found_specialization:
+            current_spec = SpecializationModel().model_dump()
+            current_spec["id"] = spec[0]
+            current_spec["name"] = spec[1]
+            current_spec["talents"] = spec[2]
+            current_spec["glyphs"] = spec[3]
+            current_spec["active"] = spec[4]
+            specialization.append(current_spec)
+        return specialization
+
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")
         self.set_function("Get", self.get)
         self.set_function("Parse", self.parse)
         self.set_function("Delete", self.delete_entry)
+        self.set_function("GetEquipment", self.get_equipment)
+        self.set_function("GetSpecialization", self.get_specialization)
