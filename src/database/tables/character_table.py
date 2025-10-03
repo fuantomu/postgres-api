@@ -160,20 +160,26 @@ class CharacterTable(Table):
             current_spec["name"] = spec[1]
             current_spec["talents"] = []
             for talent in spec[2]:
-                temp_talent = TalentModel().model_dump()
-                temp_talent["id"] = talent
-                temp_talent["name"] = talents[talent]["name"]
-                current_spec["talents"].append(temp_talent)
+                try:
+                    temp_talent = TalentModel().model_dump()
+                    temp_talent["id"] = talent
+                    temp_talent["name"] = talents[talent]["name"]
+                    current_spec["talents"].append(temp_talent)
+                except KeyError:
+                    continue
             current_spec["glyphs"] = []
             for glyph in spec[3]:
-                temp_glyph = GlyphModel().model_dump()
-                temp_glyph["id"] = glyph
-                temp_glyph["name"] = [
-                    found_glyph["name"]
-                    for found_glyph in glyphs.values()
-                    if found_glyph["id"] == glyph
-                ][0]
-                current_spec["glyphs"].append(temp_glyph)
+                try:
+                    temp_glyph = GlyphModel().model_dump()
+                    temp_glyph["id"] = glyph
+                    temp_glyph["name"] = [
+                        found_glyph["name"]
+                        for found_glyph in glyphs.values()
+                        if found_glyph["id"] == glyph
+                    ][0]
+                    current_spec["glyphs"].append(temp_glyph)
+                except KeyError:
+                    continue
             current_spec["active"] = spec[4]
             specialization.append(current_spec)
         return specialization
