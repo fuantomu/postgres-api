@@ -221,6 +221,13 @@ class CharacterParser(BlizzardParser):
                         [str(item["item"]["id"]) for item in items]
                     )
 
+                if item.get("upgrade_id"):
+                    item["link"] += "&upgd="
+                    if item["upgrade_id"] == 446:
+                        item["link"] += "1"
+                    elif item["upgrade_id"] == 447:
+                        item["link"] += "2"
+
                 if len(item["link"]) > 0:
                     item["link"] = item["link"][1:]
             item_model = ItemModel().model_dump()
@@ -333,5 +340,5 @@ if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
     test = CharacterParser("Heavenstamp", "Everlook")
-    output = test.get_talents()
+    output = test.get_sorted_equipment()
     print(output)
