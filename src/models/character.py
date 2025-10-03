@@ -60,8 +60,8 @@ class CharacterEquipmentModel(BaseModel):
     feet: ItemModel | None = None
     wrist: ItemModel | None = None
     hands: ItemModel | None = None
-    finger_1: ItemModel | None = None
-    finger_2: ItemModel | None = None
+    ring_1: ItemModel | None = None
+    ring_2: ItemModel | None = None
     trinket_1: ItemModel | None = None
     trinket_2: ItemModel | None = None
     back: ItemModel | None = None
