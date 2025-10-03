@@ -6,6 +6,7 @@ from src.models.character import CharacterEquipmentModel, CharacterModel
 from src.models.guild import GuildModel
 from src.models.item import ItemModel
 from src.models.specialization import SpecializationModel
+from src.helper.consts import glyphs
 
 slotNames = {
     "HEAD": 0,
@@ -240,19 +241,21 @@ class CharacterParser(BlizzardParser):
 
         specs = []
 
-        for specialization in talents["specializations"]:
+        for specialization in talents.get("specializations", []):
             current_spec = SpecializationModel().model_dump()
             current_spec["name"] = specialization["specialization_name"]
             current_spec["talents"] = [
-                talent["talent"]["id"] for talent in specialization.get("talents", [])
+                talent["spell_tooltip"]["spell"]["id"]
+                for talent in specialization.get("talents", [])
             ]
             specs.append(current_spec)
 
         for index, specialization in enumerate(specs):
-            specialization["glyphs"] = [
-                glyph["id"]
-                for glyph in talents["specialization_groups"][index].get("glyphs", [])
-            ]
+            for glyph in talents["specialization_groups"][index].get("glyphs", []):
+                if not glyphs.get(glyph["id"]):
+                    print(f"Glyph {glyph} is missing")
+                    continue
+                specialization["glyphs"].append(glyphs[glyph["id"]]["id"])
             specialization["active"] = talents["specialization_groups"][index][
                 "is_active"
             ]
@@ -293,8 +296,42 @@ class GuildParser(BlizzardParser):
         return guild_template
 
 
+def find_glyph_ids():
+    wowhead_url = "https://www.wowhead.com/mop-classic/search?q=GLYPH_NAME#glyphs"
+
+    total_glyphs = glyphs
+    import re
+
+    for glyph in total_glyphs:
+        response = requests.get(
+            f'{wowhead_url.replace("GLYPH_NAME", total_glyphs[glyph]['name'].replace(" ", "+"))}'
+        )
+        found = re.search(
+            r"WH\.SearchPage\.showTopResults\s*\(\s*(\[\s*[\s\S]*?\s*\])\s*\);",
+            response.text,
+        )
+
+        if found:
+            array_text = found.group(1)
+            array_text = array_text.replace(r"\/", "/")
+
+            try:
+                data = json.loads(array_text)
+                for obj in data:
+                    if obj["type"] == 6 and obj["lvjson"]["cat"] == -13:
+                        print(obj)
+                        total_glyphs[glyph]["id"] = obj["typeId"]
+            except json.JSONDecodeError as e:
+                print("JSON parsing error:", e)
+
+    new_dict = dict(sorted(total_glyphs.items()))
+    with open("test.py", "w") as f:
+        f.write(str(new_dict))
+
+
 if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
-    parser = CharacterParser("Yoloschîît", "Everlook")
-    parser.get_talents()
+    test = CharacterParser("Heavenstamp", "Everlook")
+    output = test.get_talents()
+    print(output)
