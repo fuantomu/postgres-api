@@ -51,6 +51,12 @@ class CharacterTable(Table):
                 f"No character found for {request['key']} '{request['value']}'"
             )
 
+        CharacterItemTable.delete(
+            self, [("character_id", "=", request["value"])], "characteritem"
+        )
+        CharacterSpecTable.delete(
+            self, [("id", "=", request["value"])], "characterspec"
+        )
         return super().delete_entry(request)
 
     def parse(self, request: str | dict):
@@ -58,14 +64,17 @@ class CharacterTable(Table):
         for player in request["players"]:
             character_parser = CharacterParser(player[0], player[1])
             existing_player = character_parser.get_character()
+            if existing_player.get("error"):
+                return existing_player["error"]
             guild = existing_player.pop("guild_name")
 
-            guild_parser = GuildParser(guild, player[1])
-            guild = guild_parser.get_guild()
+            if guild:
+                guild_parser = GuildParser(guild, player[1])
+                guild = guild_parser.get_guild()
 
-            if guild["id"] not in guild_updated:
-                GuildTable.add_or_update(self, guild)
-                guild_updated.append(guild["id"])
+                if guild["id"] not in guild_updated:
+                    GuildTable.add_or_update(self, guild)
+                    guild_updated.append(guild["id"])
 
             self.add_or_update(existing_player)
 
@@ -74,6 +83,10 @@ class CharacterTable(Table):
                 if equipment[slot]:
                     equipment[slot]["character_id"] = existing_player["id"]
                     CharacterItemTable.add_or_update(self, equipment[slot])
+                else:
+                    CharacterItemTable.delete_entry(
+                        self, {"character_id": existing_player["id"], "slot": slot}
+                    )
 
             talents = character_parser.get_talents()
             for talent in talents:
@@ -82,8 +95,10 @@ class CharacterTable(Table):
         return "Success"
 
     def add_or_update(self, request):
+        new_character = False
         if not request.get("id"):
             request["id"] = self.select("MAX(id)", [], "character")[0][0] + 1
+            new_character = True
 
         found_item = self.select(
             "id",
@@ -101,6 +116,14 @@ class CharacterTable(Table):
                 "character",
             )
         else:
+            if request["guild"] == -1:
+                request["guild"] = None
+            if new_character:
+                id = self.updateCharacter(
+                    request["name"], request["realm"], new_character
+                )
+                if id != "Not Found":
+                    return f"{id}"
             self.insert(request, "character")
             return f"{request['id']}"
         return "Success"
@@ -131,6 +154,7 @@ class CharacterTable(Table):
             items[item[3].lower().replace(" ", "_")]["slot"] = item[3]
             items[item[3].lower().replace(" ", "_")]["quality"] = item[4]
             items[item[3].lower().replace(" ", "_")]["wowhead_link"] = item[5]
+            items[item[3].lower().replace(" ", "_")]["icon"] = item[6]
         return items
 
     def get_specialization(self, request: str | dict):
@@ -164,6 +188,7 @@ class CharacterTable(Table):
                     temp_talent = TalentModel().model_dump()
                     temp_talent["id"] = talent
                     temp_talent["name"] = talents[talent]["name"]
+                    temp_talent["icon"] = talents[talent]["icon"]
                     current_spec["talents"].append(temp_talent)
                 except KeyError:
                     continue
@@ -172,17 +197,55 @@ class CharacterTable(Table):
                 try:
                     temp_glyph = GlyphModel().model_dump()
                     temp_glyph["id"] = glyph
-                    temp_glyph["name"] = [
-                        found_glyph["name"]
+                    found_glyph = [
+                        found_glyph
                         for found_glyph in glyphs.values()
                         if found_glyph["id"] == glyph
                     ][0]
+                    temp_glyph["name"] = found_glyph["name"]
+                    temp_glyph["icon"] = found_glyph.get("icon")
+
                     current_spec["glyphs"].append(temp_glyph)
                 except KeyError:
                     continue
             current_spec["active"] = spec[4]
             specialization.append(current_spec)
         return specialization
+
+    def updateCharacter(self, character, realm, new_character=False):
+        character_parser = CharacterParser(character, realm)
+        existing_player = character_parser.get_character()
+        if existing_player.get("error"):
+            return existing_player["error"]
+        guild = existing_player.pop("guild_name")
+
+        if guild:
+            guild_parser = GuildParser(guild, realm)
+            guild = guild_parser.get_guild()
+
+            GuildTable.add_or_update(self, guild)
+
+        if new_character:
+            self.insert(existing_player, "character")
+        else:
+            self.add_or_update(existing_player)
+
+        equipment = character_parser.get_sorted_equipment()
+        for slot in equipment:
+            if equipment[slot]:
+                equipment[slot]["character_id"] = existing_player["id"]
+                CharacterItemTable.add_or_update(self, equipment[slot])
+            else:
+                CharacterItemTable.delete_entry(
+                    self, {"character_id": existing_player["id"], "slot": slot}
+                )
+
+        talents = character_parser.get_talents()
+        for talent in talents:
+            talent["id"] = existing_player["id"]
+            CharacterSpecTable.add_or_update(self, talent)
+
+        return existing_player["id"]
 
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")

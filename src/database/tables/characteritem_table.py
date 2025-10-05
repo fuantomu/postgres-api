@@ -13,6 +13,7 @@ class CharacterItemTable(Table):
         "slot": {"value": "TEXT NOT NULL", "default": "'Head'"},
         "quality": {"value": "TEXT NOT NULL", "default": "'Common'"},
         "wowhead_link": {"value": "TEXT", "default": "''"},
+        "icon": {"value": "TEXT", "default": "''"},
         "PRIMARY KEY": {"value": "(character_id,slot)", "default": ""},
     }
 
@@ -27,11 +28,28 @@ class CharacterItemTable(Table):
         return results
 
     def delete_entry(self, request):
-        found_character = self.select("id", [(request["key"], "=", request["value"])])
-        if len(found_character) == 0:
-            raise Exception(f"No item found for {request['key']} '{request['value']}'")
-
-        return super().delete_entry(request)
+        slot = " ".join([entry.capitalize() for entry in request["slot"].split("_")])
+        found_item = self.select(
+            "id",
+            [
+                ("character_id", "=", request["character_id"]),
+                ("slot", "=", slot),
+                "AND",
+            ],
+            "characteritem",
+        )
+        if len(found_item) > 0:
+            return self.delete(
+                [
+                    ("character_id", "=", request["character_id"]),
+                    ("slot", "=", slot),
+                    "AND",
+                ],
+                "characteritem",
+            )
+        return (
+            f"No item found in slot '{slot}' for character '{request['character_id']}'"
+        )
 
     def add_or_update(self, request):
         found_item = self.select(

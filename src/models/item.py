@@ -38,3 +38,4 @@ class ItemModel(BaseModel):
         "Heirloom",
     ] = "Common"
     wowhead_link: str | None = None
+    icon: str | None = None
