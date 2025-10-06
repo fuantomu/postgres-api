@@ -106,6 +106,8 @@ class CharacterTable(Table):
             "character",
         )
         if found_item:
+            if request["guild"] == -1:
+                request["guild"] = None
             self.update(
                 request,
                 [
