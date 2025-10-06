@@ -104,8 +104,12 @@ class CharacterParser(BlizzardParser):
         character_template["name"] = character["name"]
         character_template["gender"] = character["gender"]["name"]
         character_template["faction"] = character["faction"]["name"]
-        character_template["race"] = character["race"]["name"]
-        character_template["character_class"] = character["character_class"]["name"]
+        character_template["race"] = (
+            character["race"]["name"].replace(" ", "").capitalize()
+        )
+        character_template["character_class"] = (
+            character["character_class"]["name"].replace(" ", "").capitalize()
+        )
         character_template["active_spec"] = character["active_spec"]["name"]
         character_template["realm"] = character["realm"]["name"]
         character_template["guild"] = character.get("guild", {"id": None})["id"]

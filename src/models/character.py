@@ -11,7 +11,7 @@ class CharacterModel(BaseModel):
     faction: Literal["Alliance", "Horde"] = "Alliance"
     race: Literal[
         "Human",
-        "Night Elf",
+        "Nightelf",
         "Dwarf",
         "Gnome",
         "Draenei",
@@ -35,7 +35,7 @@ class CharacterModel(BaseModel):
         "Rogue",
         "Druid",
         "Shaman",
-        "Death Knight",
+        "Deathknight",
         "Monk",
     ] = "Adventurer"
     active_spec: str = "Adventurer"
