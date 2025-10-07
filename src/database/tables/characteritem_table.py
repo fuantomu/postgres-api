@@ -14,6 +14,8 @@ class CharacterItemTable(Table):
         "quality": {"value": "TEXT NOT NULL", "default": "'Common'"},
         "wowhead_link": {"value": "TEXT", "default": "''"},
         "icon": {"value": "TEXT", "default": "''"},
+        "inventory_type": {"value": "TEXT", "default": "''"},
+        "enchantment": {"value": "TEXT", "default": "''"},
         "PRIMARY KEY": {"value": "(character_id,slot)", "default": ""},
     }
 

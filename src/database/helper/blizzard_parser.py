@@ -257,6 +257,12 @@ class CharacterParser(BlizzardParser):
             item_model["quality"] = item["quality"]["name"]
             item_model["wowhead_link"] = item["link"]
             item_model["icon"] = icon["icon"]
+            item_model["inventory_type"] = item["inventory_type"]["name"]
+            item_model["enchantment"] = None
+            if item.get("enchants"):
+                item_model["enchantment"] = "##".join(
+                    [enchant["stats"] for enchant in item["enchants"]]
+                )
             sortedEquipment[slot_name] = item_model
 
         return sortedEquipment
@@ -521,7 +527,7 @@ if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
     test = CharacterParser("Heavenstamp", "Everlook")
-    output = test.get_statistics()
+    output = test.get_sorted_equipment()
     print(output)
     for x in output:
         print(x, output[x], type(output[x]))

@@ -39,3 +39,5 @@ class ItemModel(BaseModel):
     ] = "Common"
     wowhead_link: str | None = None
     icon: str | None = None
+    inventory_type: str | None = None
+    enchantment: str | None = None

@@ -96,9 +96,7 @@ class CharacterTable(Table):
                 CharacterSpecTable.add_or_update(self, talent)
 
             stats = character_parser.get_statistics()
-            print(stats)
             for stat in stats:
-                print(stat)
                 temp_stat = {
                     "id": existing_player["id"],
                     "name": stat,
@@ -172,6 +170,8 @@ class CharacterTable(Table):
             items[item[3].lower().replace(" ", "_")]["quality"] = item[4]
             items[item[3].lower().replace(" ", "_")]["wowhead_link"] = item[5]
             items[item[3].lower().replace(" ", "_")]["icon"] = item[6]
+            items[item[3].lower().replace(" ", "_")]["inventory_type"] = item[7]
+            items[item[3].lower().replace(" ", "_")]["enchantment"] = item[8]
         return items
 
     def get_specialization(self, request: str | dict):
