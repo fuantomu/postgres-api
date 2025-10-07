@@ -69,3 +69,32 @@ class CharacterEquipmentModel(BaseModel):
     off_hand: ItemModel | None = None
     ranged: ItemModel | None = None
     tabard: ItemModel | None = None
+
+
+class RatingModel(BaseModel):
+    value: float = 0.0
+    rating: int = 0
+
+
+class CharacterStatisticModel(BaseModel):
+    health: int = 0
+    power: int | None = None
+    power_type: Literal["Mana", "Rage", "Energy", "Focus"] = "Mana"
+    strength: int = 0
+    agility: int = 0
+    intellect: int = 0
+    stamina: int = 0
+    spirit: int | None = None
+    melee_crit: RatingModel | None = None
+    ranged_crit: RatingModel | None = None
+    spell_crit: RatingModel | None = None
+    melee_haste: RatingModel | None = None
+    ranged_haste: RatingModel | None = None
+    spell_haste: RatingModel | None = None
+    mastery: RatingModel | None = None
+    attack_power: int = 0
+    spell_power: int = 0
+    armor: int = 0
+    dodge: RatingModel | None = None
+    parry: RatingModel | None = None
+    block: RatingModel | None = None

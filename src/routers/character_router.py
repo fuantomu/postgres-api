@@ -4,6 +4,7 @@ from src.models.response_model import (
     CharacterEquipmentResponseModel,
     CharacterResponseModel,
     CharacterSpecializationResponseModel,
+    CharacterStatisticResponseModel,
 )
 from src.routers.base_router import Router
 
@@ -48,6 +49,15 @@ class Character(Router):
             response_model=CharacterSpecializationResponseModel,
             responses={400: {"model": BaseResponseModel}},
         )
+        self.router.add_api_route(
+            "/Statistic",
+            self.get_statistic,
+            methods=["GET"],
+            status_code=201,
+            summary="Retrieve player stats",
+            response_model=CharacterStatisticResponseModel,
+            responses={400: {"model": BaseResponseModel}},
+        )
 
     async def post(self, character: CharacterModel):
         self.logger.info(f"Received POST request on {self.name}")
@@ -89,6 +99,18 @@ class Character(Router):
             realm = realm.lower().capitalize()
         return super().redirect_request(
             "GetSpecialization",
+            {"key": "id" if id else "name", "value": id or name, "realm": realm},
+        )
+
+    def get_statistic(
+        self, id: str = None, name: str = None, realm: str = None
+    ) -> CharacterStatisticResponseModel | BaseResponseModel:
+        if name:
+            name = name.lower().capitalize()
+        if realm:
+            realm = realm.lower().capitalize()
+        return super().redirect_request(
+            "GetStatistic",
             {"key": "id" if id else "name", "value": id or name, "realm": realm},
         )
 

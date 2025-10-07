@@ -1,6 +1,10 @@
 from typing import List
 from pydantic import BaseModel
-from src.models.character import CharacterEquipmentModel, CharacterModel
+from src.models.character import (
+    CharacterEquipmentModel,
+    CharacterModel,
+    CharacterStatisticModel,
+)
 from src.models.guild import GuildModel
 from src.models.specialization import SpecializationModel
 
@@ -19,6 +23,10 @@ class CharacterEquipmentResponseModel(BaseModel):
 
 class CharacterSpecializationResponseModel(BaseModel):
     Result: List[SpecializationModel]
+
+
+class CharacterStatisticResponseModel(BaseModel):
+    Result: CharacterStatisticModel
 
 
 class GuildResponseModel(BaseModel):

@@ -1,9 +1,11 @@
+import json
 from src.database.helper.blizzard_parser import CharacterParser, GuildParser
 from src.database.tables.characteritem_table import CharacterItemTable
 from src.database.tables.characterspec_table import CharacterSpecTable
+from src.database.tables.characterstat_table import CharacterStatTable
 from src.database.tables.guild_table import GuildTable
 from src.database.tables.table import Table
-from src.models.character import CharacterEquipmentModel
+from src.models.character import CharacterEquipmentModel, CharacterStatisticModel
 from src.models.item import ItemModel
 from src.models.specialization import GlyphModel, SpecializationModel, TalentModel
 
@@ -92,6 +94,19 @@ class CharacterTable(Table):
             for talent in talents:
                 talent["id"] = existing_player["id"]
                 CharacterSpecTable.add_or_update(self, talent)
+
+            stats = character_parser.get_statistics()
+            print(stats)
+            for stat in stats:
+                print(stat)
+                temp_stat = {
+                    "id": existing_player["id"],
+                    "name": stat,
+                    "type": type(stats[stat]).__name__,
+                    "value": str(stats[stat]),
+                }
+                CharacterStatTable.add_or_update(self, temp_stat)
+
         return "Success"
 
     def add_or_update(self, request):
@@ -214,6 +229,34 @@ class CharacterTable(Table):
             specialization.append(current_spec)
         return specialization
 
+    def get_stats(self, request: str | dict):
+        selection = [(request["key"], "=", request["value"])]
+        if request["key"] == "name":
+            if not request.get("realm"):
+                raise Exception("No realm set in request")
+            selection.append(("realm", "=", request["realm"]))
+            selection.append("AND")
+
+        found_character = self.select("id", selection)
+        if len(found_character) == 0:
+            raise Exception(
+                f"No character found for {request['key']} '{request['value']}'"
+            )
+
+        found_stats = self.select(
+            "ALL", [("id", "=", found_character[0][0])], "characterstat"
+        )
+
+        stat_template = CharacterStatisticModel().model_dump()
+        for stat in found_stats:
+            match stat[2]:
+                case "int":
+                    stat_template[stat[1]] = stat[3]
+                case "dict":
+                    stat_template[stat[1]] = json.loads(stat[3].replace("'", '"'))
+
+        return stat_template
+
     def updateCharacter(self, character, realm, new_character=False):
         character_parser = CharacterParser(character, realm)
         existing_player = character_parser.get_character()
@@ -256,3 +299,4 @@ class CharacterTable(Table):
         self.set_function("Delete", self.delete_entry)
         self.set_function("GetEquipment", self.get_equipment)
         self.set_function("GetSpecialization", self.get_specialization)
+        self.set_function("GetStatistic", self.get_stats)

@@ -2,7 +2,12 @@ import json
 from dotenv import load_dotenv
 import requests
 from os import getenv
-from src.models.character import CharacterEquipmentModel, CharacterModel
+from src.models.character import (
+    CharacterEquipmentModel,
+    CharacterModel,
+    CharacterStatisticModel,
+    RatingModel,
+)
 from src.models.guild import GuildModel
 from src.models.icon import IconModel
 from src.models.item import ItemModel
@@ -293,6 +298,84 @@ class CharacterParser(BlizzardParser):
             ]
         return specs
 
+    def get_statistics(self):
+        statistics = requests.get(
+            self.get_base_url("statistics"),
+            headers=self.headers,
+        ).json()
+        statistic_template = CharacterStatisticModel().model_dump()
+
+        statistic_template["health"] = statistics.get("health")
+        statistic_template["power"] = statistics.get("power")
+        statistic_template["strength"] = statistics.get("strength", {}).get("effective")
+        statistic_template["agility"] = statistics.get("agility", {}).get("effective")
+        statistic_template["intellect"] = statistics.get("intellect", {}).get(
+            "effective"
+        )
+        statistic_template["stamina"] = statistics.get("stamina", {}).get("effective")
+        statistic_template["spirit"] = statistics.get("spirit", {}).get("effective")
+        statistic_template["attack_power"] = statistics.get("attack_power", 0)
+        statistic_template["spell_power"] = statistics.get("spell_power", 0)
+        statistic_template["power_type"] = statistics.get("power_type", {}).get("name")
+        statistic_template["armor"] = statistics.get("armor", {}).get("effective")
+        rating_template = RatingModel().model_dump()
+
+        rating_template["value"] = statistics.get("melee_crit", {}).get("value")
+        rating_template["rating"] = statistics.get("melee_crit", {}).get(
+            "rating_normalized"
+        )
+        statistic_template["melee_crit"] = rating_template.copy()
+
+        rating_template["value"] = statistics.get("ranged_crit", {}).get("value")
+        rating_template["rating"] = statistics.get("ranged_crit", {}).get(
+            "rating_normalized"
+        )
+        statistic_template["ranged_crit"] = rating_template.copy()
+
+        rating_template["value"] = statistics.get("spell_crit", {}).get("value")
+        rating_template["rating"] = statistics.get("spell_crit", {}).get(
+            "rating_normalized"
+        )
+        statistic_template["spell_crit"] = rating_template.copy()
+
+        rating_template["value"] = statistics.get("melee_haste", {}).get("value")
+        rating_template["rating"] = statistics.get("melee_haste", {}).get(
+            "rating_normalized"
+        )
+        statistic_template["melee_haste"] = rating_template.copy()
+
+        rating_template["value"] = statistics.get("ranged_haste", {}).get("value")
+        rating_template["rating"] = statistics.get("ranged_haste", {}).get(
+            "rating_normalized"
+        )
+        statistic_template["ranged_haste"] = rating_template.copy()
+
+        rating_template["value"] = statistics.get("spell_haste", {}).get("value")
+        rating_template["rating"] = statistics.get("spell_haste", {}).get(
+            "rating_normalized"
+        )
+        statistic_template["spell_haste"] = rating_template.copy()
+
+        rating_template["value"] = statistics.get("mastery", {}).get("value")
+        rating_template["rating"] = statistics.get("mastery", {}).get(
+            "rating_normalized"
+        )
+        statistic_template["mastery"] = rating_template.copy()
+
+        rating_template["value"] = statistics.get("dodge", {}).get("value")
+        rating_template["rating"] = statistics.get("dodge", {}).get("rating_normalized")
+        statistic_template["dodge"] = rating_template.copy()
+
+        rating_template["value"] = statistics.get("block", {}).get("value")
+        rating_template["rating"] = statistics.get("block", {}).get("rating_normalized")
+        statistic_template["block"] = rating_template.copy()
+
+        rating_template["value"] = statistics.get("parry", {}).get("value")
+        rating_template["rating"] = statistics.get("parry", {}).get("rating_normalized")
+        statistic_template["parry"] = rating_template.copy()
+
+        return statistic_template
+
 
 class GuildParser(BlizzardParser):
     def __init__(self, guild: str, realm: str, token=None):
@@ -438,5 +521,7 @@ if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
     test = CharacterParser("Heavenstamp", "Everlook")
-    output = test.get_sorted_equipment()
+    output = test.get_statistics()
     print(output)
+    for x in output:
+        print(x, output[x], type(output[x]))
