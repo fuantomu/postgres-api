@@ -102,11 +102,11 @@ class CharacterStatisticModel(BaseModel):
     block: RatingModel | None = None
     defense: RatingModel | None = None
     mana_regen: float = 0.0
-    holy_resistance: RatingModel | None = None
-    fire_resistance: RatingModel | None = None
-    shadow_resistance: RatingModel | None = None
-    nature_resistance: RatingModel | None = None
-    arcane_resistance: RatingModel | None = None
+    holy_resistance: int | None = None
+    fire_resistance: int | None = None
+    shadow_resistance: int | None = None
+    nature_resistance: int | None = None
+    arcane_resistance: int | None = None
 
 
 class CharacterParseModel(BaseModel):
