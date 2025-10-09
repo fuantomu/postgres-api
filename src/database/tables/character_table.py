@@ -95,6 +95,7 @@ class CharacterTable(Table):
 
     def parse(self, request: CharacterParseModel):
         guild_updated = []
+        print(request)
         for player in request.players:
             character_parser = CharacterParser(
                 player[0],
@@ -156,7 +157,7 @@ class CharacterTable(Table):
                 }
                 CharacterStatTable.add_or_update(self, temp_stat)
 
-        return "Success"
+        return f"{existing_player['id']}"
 
     def add_or_update(self, request):
         new_character = False
@@ -186,7 +187,18 @@ class CharacterTable(Table):
                 ],
                 "character",
             )
-
+            if not found_item:
+                found_item = self.select(
+                    "id",
+                    [
+                        ("name", "=", request["name"]),
+                        ("realm", "=", request["realm"]),
+                        ("region", "=", request["region"]),
+                        ("version", "=", request["version"]),
+                        "AND",
+                    ],
+                    "character",
+                )
         if found_item:
             if request["guild"] == -1:
                 request["guild"] = None
@@ -435,6 +447,20 @@ class CharacterTable(Table):
 
         return existing_player["id"]
 
+    def post(self, request):
+        character_parser = CharacterParser(
+            request["name"],
+            request["realm"],
+            region=request["region"],
+            version=request["version"],
+        )
+        existing_player = character_parser.get_character()
+
+        if existing_player:
+            existing_player.pop("guild_name")
+            request = existing_player
+        return self.add_or_update(request)
+
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")
         self.set_function("Get", self.get)
@@ -443,3 +469,4 @@ class CharacterTable(Table):
         self.set_function("GetEquipment", self.get_equipment)
         self.set_function("GetSpecialization", self.get_specialization)
         self.set_function("GetStatistic", self.get_stats)
+        self.set_function("Post", self.post)
