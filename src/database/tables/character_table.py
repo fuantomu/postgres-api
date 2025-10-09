@@ -406,7 +406,10 @@ class CharacterTable(Table):
                 case "int":
                     stat_template[stat[1]] = stat[3]
                 case "dict":
-                    stat_template[stat[1]] = json.loads(stat[3].replace("'", '"'))
+                    try:
+                        stat_template[stat[1]] = json.loads(stat[3].replace("'", '"'))
+                    except json.decoder.JSONDecodeError:
+                        self.logger.warning(f"Failed to decode {stat[3]}")
 
         return stat_template
 
