@@ -424,6 +424,8 @@ class CharacterParser(BlizzardParser):
         statistic_template["spell_power"] = statistics.get("spell_power", 0)
         statistic_template["power_type"] = statistics.get("power_type", {}).get("name")
         statistic_template["armor"] = statistics.get("armor", {}).get("effective")
+        statistic_template["defense"] = statistics.get("defense", {}).get("effective")
+        statistic_template["mana_regen"] = statistics.get("mana_regen")
         statistic_template["arcane_resistance"] = statistics.get(
             "arcane_resistance", {}
         ).get("effective")
