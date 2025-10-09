@@ -19,7 +19,7 @@ class CharacterTable(Table):
         "id": {
             "value": "INTEGER UNIQUE NOT NULL",
         },
-        "name": {"value": "varchar(16) UNIQUE NOT NULL", "default": "'Unknown'"},
+        "name": {"value": "varchar(16) NOT NULL", "default": "'Unknown'"},
         "region": {"value": "varchar(2)", "default": "'eu'"},
         "realm": {"value": "varchar(32)", "default": "'Dev'"},
         "version": {"value": "varchar(8)", "default": "'mop'"},
@@ -163,25 +163,37 @@ class CharacterTable(Table):
         if not request.get("id"):
             request["id"] = (self.select("MAX(id)", [], "character")[0][0] or 0) + 1
             new_character = True
+            found_item = self.select(
+                "id",
+                [
+                    ("name", "=", request["name"]),
+                    ("realm", "=", request["realm"]),
+                    ("region", "=", request["region"]),
+                    ("version", "=", request["version"]),
+                    "AND",
+                ],
+                "character",
+            )
+        else:
+            found_item = self.select(
+                "id",
+                [
+                    ("id", "=", request["id"]),
+                    ("realm", "=", request["realm"]),
+                    ("region", "=", request["region"]),
+                    ("version", "=", request["version"]),
+                    "AND",
+                ],
+                "character",
+            )
 
-        found_item = self.select(
-            "id",
-            [
-                ("name", "=", request["name"]),
-                ("realm", "=", request["realm"]),
-                ("region", "=", request["region"]),
-                ("version", "=", request["version"]),
-                "AND",
-            ],
-            "character",
-        )
         if found_item:
             if request["guild"] == -1:
                 request["guild"] = None
             self.update(
                 request,
                 [
-                    ("name", "=", request["name"]),
+                    ("id", "=", found_item[0][0]),
                     ("realm", "=", request["realm"]),
                     ("region", "=", request["region"]),
                     ("version", "=", request["version"]),

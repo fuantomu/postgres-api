@@ -7,7 +7,7 @@ class GuildTable(Table):
         "id": {
             "value": "INTEGER UNIQUE NOT NULL",
         },
-        "name": {"value": "varchar(32) UNIQUE NOT NULL", "default": "'Unknown'"},
+        "name": {"value": "varchar(32) NOT NULL", "default": "'Unknown'"},
         "faction": {"value": "varchar(8) NOT NULL", "default": "'Alliance'"},
         "realm": {"value": "varchar(32) NOT NULL", "default": "'Dev'"},
         "achievement_points": {"value": "INTEGER NOT NULL", "default": 0},
