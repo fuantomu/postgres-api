@@ -68,6 +68,7 @@ class CharacterTable(Table):
             [
                 (request["key"], "=", request["value"]),
                 ("version", "=", request["version"]),
+                "AND",
             ],
         )
         if len(found_character) == 0:
@@ -80,17 +81,26 @@ class CharacterTable(Table):
             [
                 ("character_id", "=", request["value"]),
                 ("version", "=", request["version"]),
+                "AND",
             ],
             "characteritem",
         )
         CharacterSpecTable.delete(
             self,
-            [("id", "=", request["value"]), ("version", "=", request["version"])],
+            [
+                ("id", "=", request["value"]),
+                ("version", "=", request["version"]),
+                "AND",
+            ],
             "characterspec",
         )
         CharacterStatTable.delete(
             self,
-            [("id", "=", request["value"]), ("version", "=", request["version"])],
+            [
+                ("id", "=", request["value"]),
+                ("version", "=", request["version"]),
+                "AND",
+            ],
             "characterstat",
         )
         return super().delete_entry(request)
@@ -246,9 +256,9 @@ class CharacterTable(Table):
                     ("realm", "=", request["realm"]),
                     ("region", "=", request["region"]),
                     ("version", "=", request["version"]),
+                    "AND",
                 ]
             )
-            selection.append("AND")
 
         found_character = self.select("id", selection)
         if len(found_character) == 0:
@@ -262,6 +272,7 @@ class CharacterTable(Table):
             [
                 ("character_id", "=", found_character[0][0]),
                 ("version", "=", request["version"]),
+                "AND",
             ],
             "characteritem",
         )
@@ -298,9 +309,9 @@ class CharacterTable(Table):
                     ("realm", "=", request["realm"]),
                     ("region", "=", request["region"]),
                     ("version", "=", request["version"]),
+                    "AND",
                 ]
             )
-            selection.append("AND")
 
         found_character = self.select("id", selection)
         if len(found_character) == 0:
@@ -311,7 +322,11 @@ class CharacterTable(Table):
         specialization = []
         found_specialization = self.select(
             "ALL",
-            [("id", "=", found_character[0][0]), ("version", "=", request["version"])],
+            [
+                ("id", "=", found_character[0][0]),
+                ("version", "=", request["version"]),
+                "AND",
+            ],
             "characterspec",
         )
         for spec in found_specialization:
@@ -365,9 +380,9 @@ class CharacterTable(Table):
                     ("realm", "=", request["realm"]),
                     ("region", "=", request["region"]),
                     ("version", "=", request["version"]),
+                    "AND",
                 ]
             )
-            selection.append("AND")
 
         found_character = self.select("id", selection)
         if len(found_character) == 0:
@@ -377,7 +392,11 @@ class CharacterTable(Table):
 
         found_stats = self.select(
             "ALL",
-            [("id", "=", found_character[0][0]), ("version", "=", request["version"])],
+            [
+                ("id", "=", found_character[0][0]),
+                ("version", "=", request["version"]),
+                "AND",
+            ],
             "characterstat",
         )
 
