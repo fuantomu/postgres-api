@@ -39,6 +39,7 @@ class CharacterTable(Table):
     }
 
     def get(self, request: str | dict):
+        self.logger.debug(f"Get {self.name}: {request}")
         if not request["value"]:
             if not request["version"]:
                 return self.format_result(self.select("ALL"))
@@ -61,6 +62,7 @@ class CharacterTable(Table):
         return results
 
     def delete_entry(self, request):
+        self.logger.debug(f"DeleteEntry {self.name}: {request}")
         found_character = self.select(
             "id",
             [
@@ -94,6 +96,7 @@ class CharacterTable(Table):
         return super().delete_entry(request)
 
     def parse(self, request: CharacterParseModel):
+        self.logger.debug(f"Parse {self.name}: {request}")
         guild_updated = []
         for player in request.players:
             character_parser = CharacterParser(
@@ -159,6 +162,7 @@ class CharacterTable(Table):
         return f"{existing_player['id']}"
 
     def add_or_update(self, request):
+        self.logger.debug(f"AddOrUpdate {self.name}: {request}")
         new_character = False
         if not request.get("id"):
             request["id"] = (self.select("MAX(id)", [], "character")[0][0] or 0) + 1
@@ -230,6 +234,7 @@ class CharacterTable(Table):
         return "Success"
 
     def get_equipment(self, request: str | dict):
+        self.logger.debug(f"GetEquipment {self.name}: {request}")
         selection = [(request["key"], "=", request["value"])]
         if request["key"] == "name":
             if not request.get("realm"):
@@ -277,6 +282,8 @@ class CharacterTable(Table):
     def get_specialization(self, request: str | dict):
         from src.helper.glyphs import glyphs
         from src.helper.talents import talents
+
+        self.logger.debug(f"GetSpecialization {self.name}: {request}")
 
         selection = [(request["key"], "=", request["value"])]
         if request["key"] == "name":
@@ -344,6 +351,7 @@ class CharacterTable(Table):
         return specialization
 
     def get_stats(self, request: str | dict):
+        self.logger.debug(f"GetStats {self.name}: {request}")
         selection = [(request["key"], "=", request["value"])]
         if request["key"] == "name":
             if not request.get("realm"):
@@ -384,6 +392,9 @@ class CharacterTable(Table):
         return stat_template
 
     def updateCharacter(self, character, realm, region, version, new_character=False):
+        self.logger.debug(
+            f"Updating {self.name}: {character},{realm},{region},{version},{new_character}"
+        )
         character_parser = CharacterParser(
             character, realm, region=region, version=version
         )
@@ -447,6 +458,7 @@ class CharacterTable(Table):
         return existing_player["id"]
 
     def post(self, request):
+        self.logger.debug(f"Post {self.name}: {request}")
         character_parser = CharacterParser(
             request["name"],
             request["realm"],
