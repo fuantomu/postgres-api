@@ -93,7 +93,9 @@ class Table:
         if not self.exists(table_name=table_name):
             raise Exception(f"Table '{table_name}' does not exist")
 
-        self.logger.debug(f"Trying to select {request} from '{table_name}'")
+        self.logger.debug(
+            f"Trying to select {request} from '{table_name}' where '{where}'"
+        )
 
         with self.connection.cursor() as cursor:
             try:
@@ -142,7 +144,9 @@ class Table:
         if not self.exists(table_name=table_name):
             raise Exception(f"Table '{table_name}' does not exist")
 
-        self.logger.debug(f"Trying to delete {where} from '{table_name}'")
+        self.logger.debug(
+            f"Trying to delete {where} from '{table_name}' where '{where}'"
+        )
         query = psycopg.sql.SQL("DELETE FROM {table}").format(
             table=psycopg.sql.Identifier(table_name)
         )
@@ -170,7 +174,9 @@ class Table:
         if not self.exists(table_name=table_name):
             raise Exception(f"Table '{table_name}' does not exist")
 
-        self.logger.debug(f"Trying to update {request} from '{table_name}'")
+        self.logger.debug(
+            f"Trying to update {request} from '{table_name}' where '{where}'"
+        )
 
         with self.connection.cursor() as cursor:
             try:
