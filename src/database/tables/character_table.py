@@ -5,7 +5,11 @@ from src.database.tables.characterspec_table import CharacterSpecTable
 from src.database.tables.characterstat_table import CharacterStatTable
 from src.database.tables.guild_table import GuildTable
 from src.database.tables.table import Table
-from src.models.character import CharacterEquipmentModel, CharacterStatisticModel
+from src.models.character import (
+    CharacterEquipmentModel,
+    CharacterParseModel,
+    CharacterStatisticModel,
+)
 from src.models.item import ItemModel
 from src.models.specialization import GlyphModel, SpecializationModel, TalentModel
 
@@ -15,65 +19,103 @@ class CharacterTable(Table):
         "id": {
             "value": "INTEGER UNIQUE NOT NULL",
         },
-        "name": {"value": "varchar(80) UNIQUE NOT NULL", "default": "'Unknown'"},
-        "gender": {"value": "TEXT NOT NULL", "default": "'Male'"},
-        "faction": {"value": "TEXT NOT NULL", "default": "'Alliance'"},
-        "race": {"value": "TEXT NOT NULL", "default": "'Human'"},
-        "character_class": {"value": "TEXT NOT NULL", "default": "'Adventurer'"},
-        "active_spec": {"value": "TEXT NOT NULL", "default": "'Adventurer'"},
-        "realm": {"value": "TEXT NOT NULL", "default": "'Dev'"},
+        "name": {"value": "varchar(16) UNIQUE NOT NULL", "default": "'Unknown'"},
+        "region": {"value": "varchar(2)", "default": "'eu'"},
+        "realm": {"value": "varchar(32)", "default": "'Dev'"},
+        "version": {"value": "varchar(8)", "default": "'mop'"},
+        "gender": {"value": "varchar(8)", "default": "'Male'"},
+        "faction": {"value": "varchar(8)", "default": "'Alliance'"},
+        "race": {"value": "varchar(16)", "default": "'Human'"},
+        "character_class": {"value": "varchar(16)", "default": "'Adventurer'"},
+        "active_spec": {"value": "varchar(16)", "default": "'Adventurer'"},
         "guild": {"value": "INTEGER REFERENCES guild(id)"},
         "level": {"value": "SMALLINT NOT NULL", "default": 1},
         "achievement_points": {"value": "INTEGER NOT NULL", "default": 0},
         "last_login_timestamp": {"value": "BIGINT NOT NULL", "default": 0},
         "average_item_level": {"value": "SMALLINT NOT NULL", "default": 0},
         "equipped_item_level": {"value": "SMALLINT NOT NULL", "default": 0},
-        "active_title": {"value": "TEXT"},
-        "PRIMARY KEY": {"value": "(id)", "default": ""},
+        "active_title": {"value": "varchar(64)"},
+        "PRIMARY KEY": {"value": "(id,version)", "default": ""},
     }
 
     def get(self, request: str | dict):
         if not request["value"]:
-            return Table.get(self, request)
+            if not request["version"]:
+                return self.format_result(self.select("ALL"))
+            return self.format_result(
+                self.select("ALL", [("version", "=", request["version"])])
+            )
 
         results = []
         selection = [(request["key"], "=", request["value"])]
         if request["key"] == "name":
-            if not request.get("realm"):
-                raise Exception("No realm set in request")
-            selection.append(("realm", "=", request["realm"]))
+            if request.get("realm"):
+                selection.append(("realm", "=", request["realm"]))
+            if request.get("region"):
+                selection.append(("region", "=", request["region"]))
+            if request.get("version"):
+                selection.append(("version", "=", request["version"]))
+            selection.append("AND")
         results = self.format_result(self.select("ALL", selection))
 
         return results
 
     def delete_entry(self, request):
-        found_character = self.select("id", [(request["key"], "=", request["value"])])
+        found_character = self.select(
+            "id",
+            [
+                (request["key"], "=", request["value"]),
+                ("version", "=", request["version"]),
+            ],
+        )
         if len(found_character) == 0:
             raise Exception(
-                f"No character found for {request['key']} '{request['value']}'"
+                f"No character found for {request['key']} '{request['value']}' in '{request['version']}'"
             )
 
         CharacterItemTable.delete(
-            self, [("character_id", "=", request["value"])], "characteritem"
+            self,
+            [
+                ("character_id", "=", request["value"]),
+                ("version", "=", request["version"]),
+            ],
+            "characteritem",
         )
         CharacterSpecTable.delete(
-            self, [("id", "=", request["value"])], "characterspec"
+            self,
+            [("id", "=", request["value"]), ("version", "=", request["version"])],
+            "characterspec",
+        )
+        CharacterStatTable.delete(
+            self,
+            [("id", "=", request["value"]), ("version", "=", request["version"])],
+            "characterstat",
         )
         return super().delete_entry(request)
 
-    def parse(self, request: str | dict):
+    def parse(self, request: CharacterParseModel):
         guild_updated = []
-        for player in request["players"]:
-            character_parser = CharacterParser(player[0], player[1])
+        for player in request.players:
+            character_parser = CharacterParser(
+                player[0],
+                player[1],
+                region=request.region,
+                version=request.version,
+            )
             existing_player = character_parser.get_character()
             if existing_player.get("error"):
                 return existing_player["error"]
             guild = existing_player.pop("guild_name")
 
             if guild:
-                guild_parser = GuildParser(guild, player[1])
+                guild_parser = GuildParser(
+                    guild,
+                    player[1],
+                    region=request.region,
+                    version=request.version,
+                )
                 guild = guild_parser.get_guild()
-
+                guild["version"] = request.version
                 if guild["id"] not in guild_updated:
                     GuildTable.add_or_update(self, guild)
                     guild_updated.append(guild["id"])
@@ -84,15 +126,23 @@ class CharacterTable(Table):
             for slot in equipment:
                 if equipment[slot]:
                     equipment[slot]["character_id"] = existing_player["id"]
+                    equipment[slot]["version"] = request.version
                     CharacterItemTable.add_or_update(self, equipment[slot])
                 else:
                     CharacterItemTable.delete_entry(
-                        self, {"character_id": existing_player["id"], "slot": slot}
+                        self,
+                        {
+                            "character_id": existing_player["id"],
+                            "slot": slot,
+                            "version": request.version,
+                        },
                     )
 
             talents = character_parser.get_talents()
             for talent in talents:
                 talent["id"] = existing_player["id"]
+                talent["version"] = request.version
+                talent["talents"] = str(talent["talents"])
                 CharacterSpecTable.add_or_update(self, talent)
 
             stats = character_parser.get_statistics()
@@ -102,6 +152,7 @@ class CharacterTable(Table):
                     "name": stat,
                     "type": type(stats[stat]).__name__,
                     "value": str(stats[stat]),
+                    "version": request.version,
                 }
                 CharacterStatTable.add_or_update(self, temp_stat)
 
@@ -110,12 +161,18 @@ class CharacterTable(Table):
     def add_or_update(self, request):
         new_character = False
         if not request.get("id"):
-            request["id"] = self.select("MAX(id)", [], "character")[0][0] + 1
+            request["id"] = (self.select("MAX(id)", [], "character")[0][0] or 0) + 1
             new_character = True
 
         found_item = self.select(
             "id",
-            [("name", "=", request["name"]), ("realm", "=", request["realm"]), "AND"],
+            [
+                ("name", "=", request["name"]),
+                ("realm", "=", request["realm"]),
+                ("region", "=", request["region"]),
+                ("version", "=", request["version"]),
+                "AND",
+            ],
             "character",
         )
         if found_item:
@@ -126,6 +183,8 @@ class CharacterTable(Table):
                 [
                     ("name", "=", request["name"]),
                     ("realm", "=", request["realm"]),
+                    ("region", "=", request["region"]),
+                    ("version", "=", request["version"]),
                     "AND",
                 ],
                 "character",
@@ -135,7 +194,11 @@ class CharacterTable(Table):
                 request["guild"] = None
             if new_character:
                 id = self.updateCharacter(
-                    request["name"], request["realm"], new_character
+                    request["name"],
+                    request["realm"],
+                    region=request["region"],
+                    version=request["version"],
+                    new_character=new_character,
                 )
                 if id != "Not Found":
                     return f"{id}"
@@ -148,7 +211,15 @@ class CharacterTable(Table):
         if request["key"] == "name":
             if not request.get("realm"):
                 raise Exception("No realm set in request")
-            selection.append(("realm", "=", request["realm"]))
+            if not request.get("region"):
+                raise Exception("No region set in request")
+            selection.extend(
+                [
+                    ("realm", "=", request["realm"]),
+                    ("region", "=", request["region"]),
+                    ("version", "=", request["version"]),
+                ]
+            )
             selection.append("AND")
 
         found_character = self.select("id", selection)
@@ -159,7 +230,12 @@ class CharacterTable(Table):
 
         items = CharacterEquipmentModel().model_dump()
         found_items = self.select(
-            "ALL", [("character_id", "=", found_character[0][0])], "characteritem"
+            "ALL",
+            [
+                ("character_id", "=", found_character[0][0]),
+                ("version", "=", request["version"]),
+            ],
+            "characteritem",
         )
         for item in found_items:
             items[item[3].lower().replace(" ", "_")] = ItemModel().model_dump()
@@ -172,6 +248,7 @@ class CharacterTable(Table):
             items[item[3].lower().replace(" ", "_")]["icon"] = item[6]
             items[item[3].lower().replace(" ", "_")]["inventory_type"] = item[7]
             items[item[3].lower().replace(" ", "_")]["enchantment"] = item[8]
+            items[item[3].lower().replace(" ", "_")]["version"] = item[9]
         return items
 
     def get_specialization(self, request: str | dict):
@@ -182,7 +259,17 @@ class CharacterTable(Table):
         if request["key"] == "name":
             if not request.get("realm"):
                 raise Exception("No realm set in request")
-            selection.append(("realm", "=", request["realm"]))
+            if not request.get("region"):
+                raise Exception("No region set in request")
+            if not request.get("version"):
+                raise Exception("No version set in request")
+            selection.extend(
+                [
+                    ("realm", "=", request["realm"]),
+                    ("region", "=", request["region"]),
+                    ("version", "=", request["version"]),
+                ]
+            )
             selection.append("AND")
 
         found_character = self.select("id", selection)
@@ -193,19 +280,22 @@ class CharacterTable(Table):
 
         specialization = []
         found_specialization = self.select(
-            "ALL", [("id", "=", found_character[0][0])], "characterspec"
+            "ALL",
+            [("id", "=", found_character[0][0]), ("version", "=", request["version"])],
+            "characterspec",
         )
         for spec in found_specialization:
             current_spec = SpecializationModel().model_dump()
             current_spec["id"] = spec[0]
             current_spec["name"] = spec[1]
             current_spec["talents"] = []
-            for talent in spec[2]:
+            for talent in json.loads(spec[2].replace("'", '"')):
                 try:
                     temp_talent = TalentModel().model_dump()
-                    temp_talent["id"] = talent
-                    temp_talent["name"] = talents[talent]["name"]
-                    temp_talent["icon"] = talents[talent]["icon"]
+                    temp_talent["id"] = talent["id"]
+                    temp_talent["name"] = talents[talent["id"]]["name"]
+                    temp_talent["icon"] = talents[talent["id"]]["icon"]
+                    temp_talent["rank"] = talent.get("rank", 0)
                     current_spec["talents"].append(temp_talent)
                 except KeyError:
                     continue
@@ -234,7 +324,17 @@ class CharacterTable(Table):
         if request["key"] == "name":
             if not request.get("realm"):
                 raise Exception("No realm set in request")
-            selection.append(("realm", "=", request["realm"]))
+            if not request.get("region"):
+                raise Exception("No region set in request")
+            if not request.get("version"):
+                raise Exception("No version set in request")
+            selection.extend(
+                [
+                    ("realm", "=", request["realm"]),
+                    ("region", "=", request["region"]),
+                    ("version", "=", request["version"]),
+                ]
+            )
             selection.append("AND")
 
         found_character = self.select("id", selection)
@@ -244,7 +344,9 @@ class CharacterTable(Table):
             )
 
         found_stats = self.select(
-            "ALL", [("id", "=", found_character[0][0])], "characterstat"
+            "ALL",
+            [("id", "=", found_character[0][0]), ("version", "=", request["version"])],
+            "characterstat",
         )
 
         stat_template = CharacterStatisticModel().model_dump()
@@ -257,16 +359,25 @@ class CharacterTable(Table):
 
         return stat_template
 
-    def updateCharacter(self, character, realm, new_character=False):
-        character_parser = CharacterParser(character, realm)
+    def updateCharacter(self, character, realm, region, version, new_character=False):
+        character_parser = CharacterParser(
+            character, realm, region=region, version=version
+        )
+
         existing_player = character_parser.get_character()
         if existing_player.get("error"):
             return existing_player["error"]
         guild = existing_player.pop("guild_name")
 
         if guild:
-            guild_parser = GuildParser(guild, realm)
+            guild_parser = GuildParser(
+                guild,
+                realm,
+                region=region,
+                version=version,
+            )
             guild = guild_parser.get_guild()
+            guild["version"] = version
 
             GuildTable.add_or_update(self, guild)
 
@@ -279,16 +390,35 @@ class CharacterTable(Table):
         for slot in equipment:
             if equipment[slot]:
                 equipment[slot]["character_id"] = existing_player["id"]
+                equipment[slot]["version"] = version
                 CharacterItemTable.add_or_update(self, equipment[slot])
             else:
                 CharacterItemTable.delete_entry(
-                    self, {"character_id": existing_player["id"], "slot": slot}
+                    self,
+                    {
+                        "character_id": existing_player["id"],
+                        "slot": slot,
+                        "version": version,
+                    },
                 )
 
         talents = character_parser.get_talents()
         for talent in talents:
             talent["id"] = existing_player["id"]
+            talent["version"] = version
+            talent["talents"] = str(talent["talents"])
             CharacterSpecTable.add_or_update(self, talent)
+
+        stats = character_parser.get_statistics()
+        for stat in stats:
+            temp_stat = {
+                "id": existing_player["id"],
+                "name": stat,
+                "type": type(stats[stat]).__name__,
+                "value": str(stats[stat]),
+                "version": version,
+            }
+            CharacterStatTable.add_or_update(self, temp_stat)
 
         return existing_player["id"]
 

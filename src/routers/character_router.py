@@ -1,4 +1,4 @@
-from src.models.character import CharacterModel
+from src.models.character import CharacterModel, CharacterParseModel
 from src.models.response_model import (
     BaseResponseModel,
     CharacterEquipmentResponseModel,
@@ -69,59 +69,132 @@ class Character(Router):
         if request["name"]:
             request["name"] = request["name"].lower().capitalize()
         if request["realm"]:
-            request["realm"] = request["realm"].lower().capitalize()
+            request["realm"] = " ".join(
+                [
+                    realm_part.lower().capitalize()
+                    for realm_part in request["realm"].split(" ")
+                ]
+            )
         return super().redirect_request("Post", request)
 
-    def parse(self, players: dict):
+    def parse(self, characters: CharacterParseModel):
         return super().redirect_request(
             "Parse",
-            players,
+            characters,
         )
 
     def get_equipment(
-        self, id: str = None, name: str = None, realm: str = None
+        self,
+        id: str = None,
+        name: str = None,
+        realm: str = None,
+        region: str = None,
+        version: str = None,
     ) -> CharacterEquipmentResponseModel | BaseResponseModel:
         if name:
             name = name.lower().capitalize()
         if realm:
-            realm = realm.lower().capitalize()
+            realm = " ".join(
+                [realm_part.lower().capitalize() for realm_part in "realm".split(" ")]
+            )
+        if region:
+            region = region.lower()
+        if version:
+            version = version.lower()
         return super().redirect_request(
             "GetEquipment",
-            {"key": "id" if id else "name", "value": id or name, "realm": realm},
+            {
+                "key": "id" if id else "name",
+                "value": id or name,
+                "realm": realm,
+                "region": region,
+                "version": version,
+            },
         )
 
     def get_specialization(
-        self, id: str = None, name: str = None, realm: str = None
+        self,
+        id: str = None,
+        name: str = None,
+        realm: str = None,
+        region: str = None,
+        version: str = None,
     ) -> CharacterSpecializationResponseModel | BaseResponseModel:
         if name:
             name = name.lower().capitalize()
         if realm:
-            realm = realm.lower().capitalize()
+            realm = " ".join(
+                [realm_part.lower().capitalize() for realm_part in "realm".split(" ")]
+            )
+        if region:
+            region = region.lower()
+        if version:
+            version = version.lower()
         return super().redirect_request(
             "GetSpecialization",
-            {"key": "id" if id else "name", "value": id or name, "realm": realm},
+            {
+                "key": "id" if id else "name",
+                "value": id or name,
+                "realm": realm,
+                "region": region,
+                "version": version,
+            },
         )
 
     def get_statistic(
-        self, id: str = None, name: str = None, realm: str = None
+        self,
+        id: str = None,
+        name: str = None,
+        realm: str = None,
+        region: str = None,
+        version: str = None,
     ) -> CharacterStatisticResponseModel | BaseResponseModel:
         if name:
             name = name.lower().capitalize()
         if realm:
-            realm = realm.lower().capitalize()
+            realm = " ".join(
+                [realm_part.lower().capitalize() for realm_part in "realm".split(" ")]
+            )
+        if region:
+            region = region.lower()
+        if version:
+            version = version.lower()
         return super().redirect_request(
             "GetStatistic",
-            {"key": "id" if id else "name", "value": id or name, "realm": realm},
+            {
+                "key": "id" if id else "name",
+                "value": id or name,
+                "realm": realm,
+                "region": region,
+                "version": version,
+            },
         )
 
     def get(
-        self, id: str = None, name: str = None, realm: str = None
+        self,
+        id: str = None,
+        name: str = None,
+        realm: str = None,
+        region: str = None,
+        version: str = None,
     ) -> CharacterResponseModel | BaseResponseModel:
         if name:
             name = name.lower().capitalize()
         if realm:
-            realm = realm.lower().capitalize()
+            realm = " ".join(
+                [realm_part.lower().capitalize() for realm_part in "realm".split(" ")]
+            )
+        if region:
+            region = region.lower()
+        if version:
+            version = version.lower()
         return super().redirect_request(
             "Get",
-            {"key": "id" if id else "name", "value": id or name, "realm": realm},
+            {
+                "key": "id" if id else "name",
+                "value": id or name,
+                "realm": realm,
+                "region": region,
+                "version": version,
+            },
         )

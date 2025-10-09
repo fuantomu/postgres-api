@@ -6,25 +6,42 @@ class CharacterSpecTable(Table):
         "id": {
             "value": "INTEGER NOT NULL REFERENCES character(id)",
         },
-        "name": {"value": "varchar(80) NOT NULL", "default": "'Unknown'"},
-        "talents": {"value": "INTEGER[] NOT NULL", "default": ""},
+        "name": {"value": "varchar(64) NOT NULL", "default": "'Unknown'"},
+        "talents": {"value": "TEXT NOT NULL", "default": ""},
         "glyphs": {"value": "INTEGER[] NOT NULL", "default": ""},
         "active": {"value": "BOOLEAN", "default": "'TRUE'"},
-        "PRIMARY KEY": {"value": "(id,name)", "default": ""},
+        "version": {"value": "varchar(8)", "default": "'mop'"},
+        "spent_points": {"value": "varchar(8)", "default": "'0/0/0'"},
+        "PRIMARY KEY": {"value": "(id,name,version)", "default": ""},
     }
 
     def get(self, request: str | dict):
         if not request["value"]:
-            return Table.get(self, request)
+            if not request["version"]:
+                return self.format_result(self.select("ALL"))
+            return self.format_result(
+                self.select("ALL", [("version", "=", request["version"])])
+            )
 
         results = []
         selection = [(request["key"], "=", request["value"])]
+        if request["key"] == "name":
+            if request.get("version"):
+                selection.append(("version", "=", request["version"]))
+            selection.append("AND")
         results = self.format_result(self.select("ALL", selection))
 
         return results
 
     def delete_entry(self, request):
-        found_character = self.select("id", [(request["key"], "=", request["value"])])
+        found_character = self.select(
+            "id",
+            [
+                (request["key"], "=", request["value"]),
+                ("version", "=", request["version"]),
+                "AND",
+            ],
+        )
         if len(found_character) == 0:
             raise Exception(f"No spec found for {request['key']} '{request['value']}'")
 
@@ -33,17 +50,37 @@ class CharacterSpecTable(Table):
     def add_or_update(self, request):
         found_item = self.select(
             ["id", "name"],
-            [("id", "=", request["id"]), ("name", "=", request["name"]), "AND"],
+            [
+                ("id", "=", request["id"]),
+                ("name", "=", request["name"]),
+                ("version", "=", request["version"]),
+                "AND",
+            ],
             "characterspec",
         )
         if found_item:
             self.update(
                 request,
-                [("id", "=", request["id"]), ("name", "=", request["name"]), "AND"],
+                [
+                    ("id", "=", request["id"]),
+                    ("name", "=", request["name"]),
+                    ("version", "=", request["version"]),
+                    "AND",
+                ],
                 "characterspec",
             )
         else:
             self.insert(request, "characterspec")
+        if request["version"] == "classic" and request["active"]:
+            self.update(
+                {"active_spec": request["name"]},
+                [
+                    ("id", "=", request["id"]),
+                    ("version", "=", request["version"]),
+                    "AND",
+                ],
+                "character",
+            )
         return "Success"
 
     def update_functions(self):

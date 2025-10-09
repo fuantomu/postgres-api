@@ -47,6 +47,8 @@ class CharacterModel(BaseModel):
     average_item_level: int = 0
     equipped_item_level: int = 0
     active_title: str | None = None
+    region: Literal["eu", "us", "kr", "tw", "cn"] = "eu"
+    version: str = "mop"
 
 
 class CharacterEquipmentModel(BaseModel):
@@ -98,3 +100,16 @@ class CharacterStatisticModel(BaseModel):
     dodge: RatingModel | None = None
     parry: RatingModel | None = None
     block: RatingModel | None = None
+    defense: RatingModel | None = None
+    mana_regen: float = 0.0
+    holy_resistance: RatingModel | None = None
+    fire_resistance: RatingModel | None = None
+    shadow_resistance: RatingModel | None = None
+    nature_resistance: RatingModel | None = None
+    arcane_resistance: RatingModel | None = None
+
+
+class CharacterParseModel(BaseModel):
+    players: list[list] = [[]]
+    region: Literal["eu", "us", "kr", "tw", "cn"] = "eu"
+    version: str = "mop"

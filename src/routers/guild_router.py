@@ -29,12 +29,27 @@ class Guild(Router):
         return super().redirect_request("Post", request)
 
     def get(
-        self, id: str = None, name: str = None, realm: str = None
+        self,
+        id: str = None,
+        name: str = None,
+        realm: str = None,
+        region: str = None,
+        version: str = None,
     ) -> GuildResponseModel:
         if name:
             name = name.lower().capitalize()
         if realm:
             realm = realm.lower().capitalize()
+        if region:
+            region = region.lower()
+        if version:
+            version = version.lower()
         return super().redirect_request(
-            "Get", {"key": "id" if id else "name", "value": id or name, "realm": realm}
+            "Get",
+            {
+                "key": "id" if id else "name",
+                "value": id or name,
+                "realm": realm,
+                "version": version,
+            },
         )

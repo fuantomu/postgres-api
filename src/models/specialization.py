@@ -5,6 +5,7 @@ class TalentModel(BaseModel):
     id: int = 0
     name: str = "Unknown"
     icon: str | None = None
+    rank: int = 0
 
 
 class GlyphModel(BaseModel):
@@ -19,3 +20,5 @@ class SpecializationModel(BaseModel):
     talents: list[TalentModel] = []
     glyphs: list[GlyphModel] = []
     active: bool = True
+    version: str = "mop"
+    spent_points: str = "0"

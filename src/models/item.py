@@ -41,3 +41,4 @@ class ItemModel(BaseModel):
     icon: str | None = None
     inventory_type: str | None = None
     enchantment: str | None = None
+    version: str = "mop"

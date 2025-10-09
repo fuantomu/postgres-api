@@ -7,29 +7,51 @@ class GuildTable(Table):
         "id": {
             "value": "INTEGER UNIQUE NOT NULL",
         },
-        "name": {"value": "varchar(80) UNIQUE NOT NULL", "default": "'Unknown'"},
-        "faction": {"value": "TEXT NOT NULL", "default": "'Alliance'"},
-        "realm": {"value": "TEXT NOT NULL", "default": "'Dev'"},
+        "name": {"value": "varchar(32) UNIQUE NOT NULL", "default": "'Unknown'"},
+        "faction": {"value": "varchar(8) NOT NULL", "default": "'Alliance'"},
+        "realm": {"value": "varchar(32) NOT NULL", "default": "'Dev'"},
         "achievement_points": {"value": "INTEGER NOT NULL", "default": 0},
         "member_count": {"value": "SMALLINT NOT NULL", "default": 0},
         "created_timestamp": {"value": "BIGINT NOT NULL", "default": 0},
-        "PRIMARY KEY": {"value": "(id)", "default": ""},
+        "region": {"value": "varchar(2)", "default": "'eu'"},
+        "version": {"value": "varchar(8)", "default": "'mop'"},
+        "PRIMARY KEY": {"value": "(id,version)", "default": ""},
     }
 
     def get(self, request: str | dict):
         if not request["value"]:
-            return Table.get(self, request)
+            if not request["version"]:
+                return self.format_result(self.select("ALL"))
+            return self.format_result(
+                self.select("ALL", [("version", "=", request["version"])])
+            )
 
         results = []
         selection = [(request["key"], "=", request["value"])]
+        if request["key"] == "name":
+            if request.get("realm"):
+                selection.append(("realm", "=", request["realm"]))
+            if request.get("region"):
+                selection.append(("region", "=", request["region"]))
+            if request.get("version"):
+                selection.append(("version", "=", request["version"]))
+            selection.append("AND")
         results = self.format_result(self.select("ALL", selection))
 
         return results
 
     def delete_entry(self, request):
-        found_guild = self.select("id", [(request["key"], "=", request["value"])])
+        found_guild = self.select(
+            "id",
+            [
+                (request["key"], "=", request["value"]),
+                ("version", "=", request["version"]),
+            ],
+        )
         if len(found_guild) == 0:
-            raise Exception(f"No guild found for {request['key']} '{request['value']}'")
+            raise Exception(
+                f"No guild found for {request['key']} '{request['value']}' in '{request['version']}'"
+            )
 
         return super().delete_entry(request)
 
@@ -39,7 +61,12 @@ class GuildTable(Table):
 
         found_item = self.select(
             "id",
-            [("name", "=", request["name"]), ("realm", "=", request["realm"]), "AND"],
+            [
+                ("name", "=", request["name"]),
+                ("realm", "=", request["realm"]),
+                ("version", "=", request["version"]),
+                "AND",
+            ],
             "guild",
         )
         if found_item:
@@ -48,6 +75,7 @@ class GuildTable(Table):
                 [
                     ("name", "=", request["name"]),
                     ("realm", "=", request["realm"]),
+                    ("version", "=", request["version"]),
                     "AND",
                 ],
                 "guild",

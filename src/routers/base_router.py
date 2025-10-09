@@ -44,10 +44,18 @@ class Router:
             "Get", {"key": "id" if id else "name", "value": id or name}
         )
 
-    def delete(self, id: str = None, name: str = None):
+    def delete(
+        self, id: str = None, name: str = None, realm: str = None, version: str = None
+    ):
         self.logger.info(f"Received DELETE request on {self.name}")
         return self.redirect_request(
-            "Delete", {"key": "id" if id else "name", "value": id or name}
+            "Delete",
+            {
+                "key": "id" if id else "name",
+                "value": id or name,
+                "realm": realm,
+                "version": version,
+            },
         )
 
     def missing_parameters(self, parameters: list[str]) -> Response:

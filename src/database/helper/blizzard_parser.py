@@ -14,6 +14,7 @@ from src.models.item import ItemModel
 from src.models.specialization import SpecializationModel
 from src.helper.glyphs import glyphs
 from src.helper.talents import talents
+from src.helper.enchantments import enchantments
 
 slotNames = {
     "head": 0,
@@ -55,9 +56,27 @@ ignore_enchant = [3, 18]
 
 
 class BlizzardParser:
-    def __init__(self, token=None):
+    def __init__(
+        self,
+        namespace: str = None,
+        region: str = "eu",
+        version: str = "mop",
+        token=None,
+    ):
         self.headers = {"Authorization": None}
         self.base_url = "https://eu.api.blizzard.com/"
+        if not namespace:
+            match version.lower():
+                case "classic":
+                    self.namespace = "classic1x"
+                case "wod" | "mop" | "cata" | "wotlk":
+                    self.namespace = "classic"
+                case _:
+                    self.namespace = namespace
+        else:
+            self.namespace = namespace
+        self.region = region
+        self.version = version
         self.get_token(token)
 
     def get_token(self, token=None):
@@ -83,11 +102,19 @@ class BlizzardParser:
 
 
 class CharacterParser(BlizzardParser):
-    def __init__(self, character: str, realm: str, token=None):
-        super().__init__(token)
+    def __init__(
+        self,
+        character: str,
+        realm: str,
+        namespace: str = None,
+        region: str = "eu",
+        version: str = "mop",
+        token=None,
+    ):
+        super().__init__(namespace, region, version, token)
         self.character = character
-        self.realm = realm
-        self.base_url = "https://eu.api.blizzard.com/profile/wow/character/REALM/CHARACTERNAME/TYPE?namespace=profile-classic-eu&locale=en_GB&access_token="
+        self.realm = realm.replace(" ", "-")
+        self.base_url = "https://REGION.api.blizzard.com/profile/wow/character/REALM/CHARACTERNAME/TYPE?namespace=profile-NAMESPACE-REGION&locale=en_GB&access_token="
 
     def get_base_url(self, url_type=""):
         return (
@@ -95,6 +122,8 @@ class CharacterParser(BlizzardParser):
             .get_base_url(url_type)
             .replace("CHARACTERNAME", self.character.lower())
             .replace("REALM", self.realm.lower())
+            .replace("NAMESPACE", self.namespace.lower())
+            .replace("REGION", self.region.lower())
         )
 
     def get_character(self):
@@ -104,6 +133,7 @@ class CharacterParser(BlizzardParser):
         ).json()
         if character.get("detail"):
             return {"error": character["detail"]}
+
         character_template = CharacterModel().model_dump()
         character_template["id"] = character["id"]
         character_template["name"] = character["name"]
@@ -115,11 +145,22 @@ class CharacterParser(BlizzardParser):
         character_template["character_class"] = (
             character["character_class"]["name"].replace(" ", "").capitalize()
         )
-        character_template["active_spec"] = character["active_spec"]["name"]
+        character_template["active_spec"] = character.get("active_spec", {}).get(
+            "name", "Adventurer"
+        )
+        if (
+            character_template["active_spec"]
+            and character_template["active_spec"] != "Adventurer"
+        ):
+            character_template["active_spec"] = (
+                character_template["active_spec"].replace(" ", "").capitalize()
+            )
         character_template["realm"] = character["realm"]["name"]
         character_template["guild"] = character.get("guild", {"id": None})["id"]
         character_template["level"] = character["level"]
-        character_template["achievement_points"] = character["achievement_points"]
+        character_template["achievement_points"] = character.get(
+            "achievement_points", 0
+        )
         character_template["last_login_timestamp"] = character.get(
             "last_login_timestamp"
         )
@@ -131,22 +172,21 @@ class CharacterParser(BlizzardParser):
         character_template["guild_name"] = character.get("guild", {"name": None})[
             "name"
         ]
+        character_template["region"] = self.region.lower()
+        character_template["version"] = self.version.lower()
 
         return character_template
 
     def get_sorted_equipment(self):
-        character = requests.get(
+        equipment = requests.get(
             self.get_base_url("equipment"),
             headers=self.headers,
-        ).json()
-        enchants = requests.get(
-            "https://raw.githubusercontent.com/fuantomu/envy-armory/main/enchants.json"
         ).json()
         affixes = requests.get(
             "https://raw.githubusercontent.com/fuantomu/envy-armory/main/affix.json"
         ).json()
         sortedEquipment = CharacterEquipmentModel().model_dump()
-        items = character["equipped_items"]
+        items = equipment["equipped_items"]
 
         for item in items:
             item["link"] = ""
@@ -154,19 +194,32 @@ class CharacterParser(BlizzardParser):
             if not slotNames[slot_name] in ignore_enchant:
                 if item.get("enchantments"):
 
-                    if item["enchantments"][0]["enchantment_slot"]["id"] == 0:
+                    if any(
+                        enchant["enchantment_slot"]["id"] in [0, 7, 8, 9]
+                        for enchant in item["enchantments"]
+                    ):
                         item["link"] += "&ench="
 
+                    for enchant in item["enchantments"]:
+                        if enchant["enchantment_slot"]["id"] == 5:
+                            continue
+                        if (
+                            not enchantments.get(enchant["enchantment_id"])
+                            or self.version
+                            not in enchantments[enchant["enchantment_id"]].keys()
+                        ):
+                            print(f"Enchant {enchant} is missing")
+                            save_enchant(enchant, self.version)
+
                     filtered = [
-                        enchant
-                        for enchant in enchants[str(slotNames[slot_name])]
-                        if any(
-                            enchant["id"] == item_enchant["enchantment_id"]
+                        enchantments[enchant][self.version]
+                        for enchant in enchantments
+                        if enchantments[enchant].get(self.version)
+                        and any(
+                            enchantments[enchant][self.version]["id"]
+                            == item_enchant["enchantment_id"]
+                            and item_enchant["enchantment_slot"]["id"] in [0, 7, 8, 9]
                             for item_enchant in item["enchantments"]
-                        )
-                        or any(
-                            entry.get("enchantment_id") == 3729
-                            for entry in item["enchantments"]
                         )
                     ]
                     item["enchants"] = filtered
@@ -247,7 +300,11 @@ class CharacterParser(BlizzardParser):
                 if len(item["link"]) > 0:
                     item["link"] = item["link"][1:]
 
-            iconparser = IconParser(item["item"]["id"], "item")
+            iconparser = IconParser(
+                item["item"]["id"],
+                "item",
+                namespace=get_namespace(item["item"]["key"]["href"]) or self.namespace,
+            )
             icon = iconparser.get_icon()
 
             item_model = ItemModel().model_dump()
@@ -261,8 +318,9 @@ class CharacterParser(BlizzardParser):
             item_model["enchantment"] = None
             if item.get("enchants"):
                 item_model["enchantment"] = "##".join(
-                    [enchant["stats"] for enchant in item["enchants"]]
+                    [enchant["display_string"] for enchant in item["enchants"]]
                 )
+            item_model["version"] = self.version.lower()
             sortedEquipment[slot_name] = item_model
 
         return sortedEquipment
@@ -272,11 +330,16 @@ class CharacterParser(BlizzardParser):
             self.get_base_url("specializations"),
             headers=self.headers,
         ).json()
+        if self.version == "classic":
+            return self.get_talents_classic_fresh(specializations)
+
         specs = []
 
         for specialization in specializations.get("specializations", []):
             current_spec = SpecializationModel().model_dump()
-            current_spec["name"] = specialization["specialization_name"]
+            current_spec["name"] = (
+                specialization["specialization_name"].replace(" ", "").capitalize()
+            )
             current_spec["talents"] = []
             for talent in specialization.get("talents", []):
                 if not talents.get(
@@ -285,8 +348,10 @@ class CharacterParser(BlizzardParser):
                     "icon"
                 ):
                     print(f"Talent {talent['spell_tooltip']['spell']} is missing")
-                    save_talent(talent["spell_tooltip"]["spell"])
-                current_spec["talents"].append(talent["spell_tooltip"]["spell"]["id"])
+                    save_talent(talent["spell_tooltip"]["spell"], self.version)
+                current_spec["talents"].append(
+                    {"id": talent["spell_tooltip"]["spell"]["id"]}
+                )
             specs.append(current_spec)
 
         for index, specialization in enumerate(specs):
@@ -297,11 +362,46 @@ class CharacterParser(BlizzardParser):
                     "icon"
                 ):
                     print(f"Glyph {glyph} is missing")
-                    find_glyph(glyph)
+                    find_glyph(glyph, self.version)
                 specialization["glyphs"].append(glyphs[glyph["id"]]["id"])
             specialization["active"] = specializations["specialization_groups"][index][
                 "is_active"
             ]
+        return specs
+
+    def get_talents_classic_fresh(self, specializations):
+        specs = []
+        for specialization in specializations.get("specialization_groups", []):
+            current_spec = SpecializationModel().model_dump()
+            current_spec["name"] = max(
+                specialization.get("specializations", []),
+                key=lambda x: x["spent_points"],
+            )["specialization_name"]
+            current_spec["spent_points"] = "/".join(
+                str(_spec["spent_points"])
+                for _spec in specialization.get("specializations", [])
+            )
+            current_spec["talents"] = []
+            for spec in specialization.get("specializations", []):
+
+                for talent in spec.get("talents", []):
+                    if not talents.get(
+                        talent["spell_tooltip"]["spell"]["id"]
+                    ) or not talents.get(
+                        talent["spell_tooltip"]["spell"]["id"], {}
+                    ).get(
+                        "icon"
+                    ):
+                        print(f"Talent {talent['spell_tooltip']['spell']} is missing")
+                        save_talent(talent["spell_tooltip"]["spell"], self.version)
+                    current_spec["talents"].append(
+                        {
+                            "id": talent["spell_tooltip"]["spell"]["id"],
+                            "rank": talent["talent_rank"],
+                        }
+                    )
+            current_spec["active"] = specialization.get("is_active", False)
+            specs.append(current_spec)
         return specs
 
     def get_statistics(self):
@@ -384,11 +484,19 @@ class CharacterParser(BlizzardParser):
 
 
 class GuildParser(BlizzardParser):
-    def __init__(self, guild: str, realm: str, token=None):
-        super().__init__(token)
+    def __init__(
+        self,
+        guild: str,
+        realm: str,
+        namespace: str = None,
+        region: str = "eu",
+        version: str = "mop",
+        token=None,
+    ):
+        super().__init__(namespace, region, version, token)
         self.guild = guild.replace(" ", "-")
-        self.realm = realm
-        self.base_url = "https://eu.api.blizzard.com/data/wow/guild/REALM/GUILDNAME?namespace=profile-classic-eu&locale=en_GB&access_token="
+        self.realm = realm = realm.replace(" ", "-")
+        self.base_url = "https://REGION.api.blizzard.com/data/wow/guild/REALM/GUILDNAME?namespace=profile-NAMESPACE-REGION&locale=en_GB&access_token="
 
     def get_base_url(self, url_type=""):
         return (
@@ -396,6 +504,8 @@ class GuildParser(BlizzardParser):
             .get_base_url(url_type)
             .replace("GUILDNAME", self.guild.lower())
             .replace("REALM", self.realm.lower())
+            .replace("NAMESPACE", self.namespace.lower())
+            .replace("REGION", self.region.lower())
         )
 
     def get_guild(self):
@@ -413,6 +523,8 @@ class GuildParser(BlizzardParser):
         guild_template["achievement_points"] = guild["achievement_points"]
         guild_template["member_count"] = guild["member_count"]
         guild_template["created_timestamp"] = guild.get("created_timestamp")
+        guild_template["region"] = self.region.lower()
+        guild_template["version"] = self.version.lower()
 
         return guild_template
 
@@ -422,12 +534,13 @@ class IconParser(BlizzardParser):
         self,
         id: str,
         media_type: str,
+        namespace: str = None,
         token=None,
     ):
-        super().__init__(token)
+        super().__init__(namespace, token)
         self.id = str(id)
         self.media_type = media_type
-        self.base_url = "https://eu.api.blizzard.com/data/wow/media/MEDIATYPE/MEDIAID?namespace=static-classic-eu&locale=en_GB&access_token="
+        self.base_url = "https://us.api.blizzard.com/data/wow/media/MEDIATYPE/MEDIAID?namespace=NAMESPACE&locale=en_GB&access_token="
 
     def get_base_url(self, url_type=""):
         return (
@@ -435,6 +548,7 @@ class IconParser(BlizzardParser):
             .get_base_url(url_type)
             .replace("MEDIATYPE", self.media_type.lower())
             .replace("MEDIAID", self.id)
+            .replace("NAMESPACE", self.namespace.lower())
         )
 
     def get_icon(self):
@@ -450,14 +564,15 @@ class IconParser(BlizzardParser):
                 icon_template["icon"] = icon["results"][0]["data"]["assets"][0]["value"]
             else:
                 icon_template["icon"] = icon["assets"][0]["value"]
+            icon_template["icon"] = icon_template["icon"].replace("classic_", "")
         except KeyError:
             icon_template["icon"] = None
 
         return icon_template
 
 
-def find_glyph(glyph):
-    wowhead_url = "https://www.wowhead.com/mop-classic/"
+def find_glyph(glyph, version):
+    wowhead_url = f"https://www.wowhead.com/{version}/"
 
     import re
 
@@ -490,6 +605,7 @@ def find_glyph(glyph):
                         icon_text = (
                             icon_text.replace(" ", "").replace('"', "").split(",")
                         )
+                        icon_text = icon_text["icon"].replace("classic_", "")
                         glyphs[glyph["id"]]["icon"] = icon_text[0]
 
         except json.JSONDecodeError as e:
@@ -500,8 +616,8 @@ def find_glyph(glyph):
         f.write(f"glyphs = {str(new_dict)}")
 
 
-def save_talent(talent):
-    wowhead_url = "https://www.wowhead.com/mop-classic/"
+def save_talent(talent, version):
+    wowhead_url = f"https://www.wowhead.com/{version}/"
 
     import re
 
@@ -523,11 +639,50 @@ def save_talent(talent):
         f.write(f"talents = {str(new_dict)}")
 
 
+def save_enchant(enchant, version):
+
+    if not enchantments.get(enchant["enchantment_id"]):
+        enchantments[enchant["enchantment_id"]] = {}
+    enchantments[enchant["enchantment_id"]][version] = {
+        "id": enchant["enchantment_id"],
+        "name": enchant.get("source_item", {})
+        .get("name", enchant.get("spell", {}).get("name", "Unknown"))
+        .replace("QA", ""),
+        "display_string": enchant.get(
+            "display_string", enchant.get("source_item", {}).get("name", "Unknown")
+        ).replace("Enchanted ", ""),
+    }
+
+    new_dict = dict(sorted(enchantments.items()))
+    with open("src/helper/enchantments.py", "w") as f:
+        f.write(f"enchantments = {str(new_dict)}")
+
+
+def get_namespace(link: str):
+    namespace = link.split("?namespace=")[1].replace("-eu", "-us")
+    return namespace
+
+
 if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
-    test = CharacterParser("Heavenstamp", "Everlook")
-    output = test.get_sorted_equipment()
-    print(output)
-    for x in output:
-        print(x, output[x], type(output[x]))
+    test = CharacterParser(
+        "Heavenstamp",
+        "Everlook",
+        region="eu",
+        version="mop",
+    )
+    # print(test.get_character())
+    # print(test.get_sorted_equipment())
+    # test2 = CharacterParser("Zoo", "nazgrim", namespace="classic", region="us")
+    # print(test2.get_talents())
+    test3 = CharacterParser(
+        "Xippm",
+        "Crusader Strike",
+        region="us",
+        version="classic",
+    )
+    # print(test3.get_character())
+    # print(test3.get_sorted_equipment())
+    print(test3.get_talents())
+    # print(test3.get_statistics())
