@@ -95,7 +95,6 @@ class CharacterTable(Table):
 
     def parse(self, request: CharacterParseModel):
         guild_updated = []
-        print(request)
         for player in request.players:
             character_parser = CharacterParser(
                 player[0],
@@ -456,8 +455,15 @@ class CharacterTable(Table):
         )
         existing_player = character_parser.get_character()
 
-        if existing_player:
+        if not existing_player.get("error"):
             existing_player.pop("guild_name")
+            self.delete(
+                [
+                    ("id", "=", request["id"]),
+                    ("version", "=", request["version"]),
+                    "AND",
+                ]
+            )
             request = existing_player
         return self.add_or_update(request)
 
