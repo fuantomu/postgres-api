@@ -424,6 +424,21 @@ class CharacterParser(BlizzardParser):
         statistic_template["spell_power"] = statistics.get("spell_power", 0)
         statistic_template["power_type"] = statistics.get("power_type", {}).get("name")
         statistic_template["armor"] = statistics.get("armor", {}).get("effective")
+        statistic_template["arcane_resistance"] = statistics.get(
+            "arcane_resistance", {}
+        ).get("effective")
+        statistic_template["fire_resistance"] = statistics.get(
+            "fire_resistance", {}
+        ).get("effective")
+        statistic_template["nature_resistance"] = statistics.get(
+            "nature_resistance", {}
+        ).get("effective")
+        statistic_template["shadow_resistance"] = statistics.get(
+            "shadow_resistance", {}
+        ).get("effective")
+        statistic_template["holy_resistance"] = statistics.get(
+            "holy_resistance", {}
+        ).get("effective")
         rating_template = RatingModel().model_dump()
 
         rating_template["value"] = statistics.get("melee_crit", {}).get("value")
@@ -684,5 +699,5 @@ if __name__ == "__main__":
     )
     # print(test3.get_character())
     # print(test3.get_sorted_equipment())
-    print(test3.get_talents())
-    # print(test3.get_statistics())
+    # print(test3.get_talents())
+    print(test3.get_statistics())
