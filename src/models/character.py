@@ -107,6 +107,7 @@ class CharacterStatisticModel(BaseModel):
     shadow_resistance: int | None = None
     nature_resistance: int | None = None
     arcane_resistance: int | None = None
+    frost_resistance: int | None = None
 
 
 class CharacterParseModel(BaseModel):

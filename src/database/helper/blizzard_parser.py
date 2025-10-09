@@ -441,6 +441,9 @@ class CharacterParser(BlizzardParser):
         statistic_template["holy_resistance"] = statistics.get(
             "holy_resistance", {}
         ).get("effective")
+        statistic_template["frost_resistance"] = statistics.get(
+            "frost_resistance", {}
+        ).get("effective")
         rating_template = RatingModel().model_dump()
 
         rating_template["value"] = statistics.get("melee_crit", {}).get("value")
