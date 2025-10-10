@@ -100,7 +100,7 @@ class CharacterStatisticModel(BaseModel):
     dodge: RatingModel | None = None
     parry: RatingModel | None = None
     block: RatingModel | None = None
-    defense: RatingModel | None = None
+    defense: int = 0
     mana_regen: float = 0.0
     holy_resistance: int | None = None
     fire_resistance: int | None = None

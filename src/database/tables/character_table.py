@@ -403,7 +403,7 @@ class CharacterTable(Table):
         stat_template = CharacterStatisticModel().model_dump()
         for stat in found_stats:
             match stat[2]:
-                case "int":
+                case "int" | "float" | "str":
                     stat_template[stat[1]] = stat[3]
                 case "dict":
                     try:
