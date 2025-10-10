@@ -358,12 +358,15 @@ class CharacterParser(BlizzardParser):
             for glyph in specializations["specialization_groups"][index].get(
                 "glyphs", []
             ):
-                if not glyphs.get(glyph["id"]) or not glyphs.get(glyph["id"], {}).get(
-                    "icon"
+                if (
+                    not glyphs.get(glyph["id"])
+                    or self.version not in glyphs.get(glyph["id"], {}).keys()
+                    or not glyphs.get(glyph["id"], {}).get(self.version, {}).get("icon")
+                    or not glyphs.get(glyph["id"], {}).get(self.version, {}).get("type")
                 ):
                     print(f"Glyph {glyph} is missing")
                     find_glyph(glyph, self.version)
-                specialization["glyphs"].append(glyphs[glyph["id"]]["id"])
+                specialization["glyphs"].append(glyphs[glyph["id"]][self.version]["id"])
             specialization["active"] = specializations["specialization_groups"][index][
                 "is_active"
             ]
@@ -592,6 +595,7 @@ class IconParser(BlizzardParser):
 
 
 def find_glyph(glyph, version):
+    print(f"Trying to extract {glyph} from wowhead/{version}")
     wowhead_url = f"https://www.wowhead.com/{version}/"
 
     import re
@@ -599,6 +603,7 @@ def find_glyph(glyph, version):
     response = requests.get(
         f'{wowhead_url}search?q={glyph['name'].replace(" ", "+")}#glyphs'
     )
+
     found = re.search(
         r"WH\.SearchPage\.showTopResults\s*\(\s*(\[\s*[\s\S]*?\s*\])\s*\);",
         response.text,
@@ -613,10 +618,13 @@ def find_glyph(glyph, version):
             for obj in data:
                 if obj["type"] == 6 and obj["lvjson"]["cat"] == -13:
                     print(obj)
-                    glyphs[glyph["id"]] = {
+                    if not glyphs.get(glyph["id"]):
+                        glyphs[glyph["id"]] = {}
+                    glyphs[glyph["id"]][version] = {
                         "name": glyph["name"],
                         "id": obj["typeId"],
                         "icon": None,
+                        "type": None,
                     }
                     response = requests.get(f'{wowhead_url}spell={obj["typeId"]}')
                     found = re.search(r"Icon\.create\((.*?)\)", response.text)
@@ -625,11 +633,19 @@ def find_glyph(glyph, version):
                         icon_text = (
                             icon_text.replace(" ", "").replace('"', "").split(",")
                         )
-                        icon_text = icon_text["icon"].replace("classic_", "")
-                        glyphs[glyph["id"]]["icon"] = icon_text[0]
+                        icon_text = icon_text[0].replace("classic_", "")
+                        glyphs[glyph["id"]][version]["icon"] = icon_text
 
         except json.JSONDecodeError as e:
             print("JSON parsing error:", e)
+
+    found = re.search(
+        r"Glyph type: (\w+)",
+        response.text,
+    )
+    if found:
+        glyph_type = found.group(1)
+        glyphs[glyph["id"]][version]["type"] = glyph_type
 
     new_dict = dict(sorted(glyphs.items()))
     with open("src/helper/glyphs.py", "w") as f:
@@ -641,11 +657,7 @@ def save_talent(talent, version):
 
     import re
 
-    talents[talent["id"]] = {
-        "id": talent["id"],
-        "name": talent["name"],
-        "icon": None,
-    }
+    talents[talent["id"]] = {"id": talent["id"], "name": talent["name"], "icon": None}
 
     response = requests.get(f'{wowhead_url}spell={talent["id"]}')
     found = re.search(r"Icon\.create\((.*?)\)", response.text)
@@ -694,6 +706,7 @@ if __name__ == "__main__":
     )
     # print(test.get_character())
     # print(test.get_sorted_equipment())
+    print(test.get_talents())
     # test2 = CharacterParser("Zoo", "nazgrim", namespace="classic", region="us")
     # print(test2.get_talents())
     test3 = CharacterParser(
@@ -705,4 +718,4 @@ if __name__ == "__main__":
     # print(test3.get_character())
     # print(test3.get_sorted_equipment())
     # print(test3.get_talents())
-    print(test3.get_statistics())
+    # print(test3.get_statistics())
