@@ -354,12 +354,13 @@ class CharacterTable(Table):
                     temp_glyph = GlyphModel().model_dump()
                     temp_glyph["id"] = glyph
                     found_glyph = [
-                        found_glyph
+                        found_glyph.get(request["version"])
                         for found_glyph in glyphs.values()
-                        if found_glyph["id"] == glyph
+                        if found_glyph[request["version"]]["id"] == glyph
                     ][0]
                     temp_glyph["name"] = found_glyph["name"]
                     temp_glyph["icon"] = found_glyph.get("icon")
+                    temp_glyph["type"] = found_glyph.get("type")
 
                     current_spec["glyphs"].append(temp_glyph)
                 except KeyError:
