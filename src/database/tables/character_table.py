@@ -342,8 +342,15 @@ class CharacterTable(Table):
                 try:
                     temp_talent = TalentModel().model_dump()
                     temp_talent["id"] = talent["id"]
-                    temp_talent["name"] = talents[talent["id"]]["name"]
-                    temp_talent["icon"] = talents[talent["id"]]["icon"]
+                    found_talent = [
+                        found_talent[request["version"]]
+                        for found_talent in talents.values()
+                        if found_talent.get(request["version"], {}).get("id", {})
+                        == talent["id"]
+                    ]
+                    if found_talent:
+                        temp_talent["name"] = found_talent[0].get("name")
+                        temp_talent["icon"] = found_talent[0].get("icon")
                     temp_talent["rank"] = talent.get("rank", 0)
                     current_spec["talents"].append(temp_talent)
                 except KeyError:
@@ -356,11 +363,12 @@ class CharacterTable(Table):
                     found_glyph = [
                         found_glyph.get(request["version"])
                         for found_glyph in glyphs.values()
-                        if found_glyph[request["version"]]["id"] == glyph
-                    ][0]
-                    temp_glyph["name"] = found_glyph["name"]
-                    temp_glyph["icon"] = found_glyph.get("icon")
-                    temp_glyph["type"] = found_glyph.get("type")
+                        if found_glyph.get(request["version"]).get("id") == glyph
+                    ]
+                    if found_glyph:
+                        temp_glyph["name"] = found_glyph[0]["name"]
+                        temp_glyph["icon"] = found_glyph[0].get("icon")
+                        temp_glyph["type"] = found_glyph[0].get("type")
 
                     current_spec["glyphs"].append(temp_glyph)
                 except KeyError:

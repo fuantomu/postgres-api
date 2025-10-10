@@ -342,10 +342,15 @@ class CharacterParser(BlizzardParser):
             )
             current_spec["talents"] = []
             for talent in specialization.get("talents", []):
-                if not talents.get(
-                    talent["spell_tooltip"]["spell"]["id"]
-                ) or not talents.get(talent["spell_tooltip"]["spell"]["id"], {}).get(
-                    "icon"
+                if (
+                    not talents.get(talent["spell_tooltip"]["spell"]["id"])
+                    or self.version
+                    not in talents.get(
+                        talent["spell_tooltip"]["spell"]["id"], {}
+                    ).keys()
+                    or not talents.get(talent["spell_tooltip"]["spell"]["id"], {})
+                    .get(self.version, {})
+                    .get("icon")
                 ):
                     print(f"Talent {talent['spell_tooltip']['spell']} is missing")
                     save_talent(talent["spell_tooltip"]["spell"], self.version)
@@ -388,12 +393,15 @@ class CharacterParser(BlizzardParser):
             for spec in specialization.get("specializations", []):
 
                 for talent in spec.get("talents", []):
-                    if not talents.get(
-                        talent["spell_tooltip"]["spell"]["id"]
-                    ) or not talents.get(
-                        talent["spell_tooltip"]["spell"]["id"], {}
-                    ).get(
-                        "icon"
+                    if (
+                        not talents.get(talent["spell_tooltip"]["spell"]["id"])
+                        or self.version
+                        not in talents.get(
+                            talent["spell_tooltip"]["spell"]["id"], {}
+                        ).keys()
+                        or not talents.get(talent["spell_tooltip"]["spell"]["id"], {})
+                        .get(self.version, {})
+                        .get("icon")
                     ):
                         print(f"Talent {talent['spell_tooltip']['spell']} is missing")
                         save_talent(talent["spell_tooltip"]["spell"], self.version)
@@ -653,18 +661,26 @@ def find_glyph(glyph, version):
 
 
 def save_talent(talent, version):
+    print(f"Trying to extract {talent} from wowhead/{version}")
     wowhead_url = f"https://www.wowhead.com/{version}/"
 
     import re
 
-    talents[talent["id"]] = {"id": talent["id"], "name": talent["name"], "icon": None}
+    if not talents.get(talent["id"]):
+        talents[talent["id"]] = {}
+
+    talents[talent["id"]][version] = {
+        "id": talent["id"],
+        "name": talent["name"],
+        "icon": None,
+    }
 
     response = requests.get(f'{wowhead_url}spell={talent["id"]}')
     found = re.search(r"Icon\.create\((.*?)\)", response.text)
     if found:
         icon_text = found.group(1)
         icon_text = icon_text.replace(" ", "").replace('"', "").split(",")
-        talents[talent["id"]]["icon"] = icon_text[0]
+        talents[talent["id"]][version]["icon"] = icon_text[0]
 
     new_dict = dict(sorted(talents.items()))
     with open("src/helper/talents.py", "w") as f:
