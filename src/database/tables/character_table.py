@@ -48,17 +48,21 @@ class CharacterTable(Table):
             )
 
         results = []
-        selection = [(request["key"], "=", request["value"])]
+        selection = [
+            (
+                request["key"],
+                "=",
+                request["value"],
+            ),
+            ("version", "=", request["version"]),
+        ]
         if request["key"] == "name":
             if request.get("realm"):
                 selection.append(("realm", "=", request["realm"]))
             if request.get("region"):
                 selection.append(("region", "=", request["region"]))
-            if request.get("version"):
-                selection.append(("version", "=", request["version"]))
-            selection.append("AND")
+        selection.append("AND")
         results = self.format_result(self.select("ALL", selection))
-
         return results
 
     def delete_entry(self, request):
