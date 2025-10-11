@@ -177,7 +177,7 @@ class CharacterTable(Table):
 
     def add_or_update(self, request):
         self.logger.debug(f"AddOrUpdate {self.name}: {request}")
-        new_character = False
+        new_character = request.pop("new_character", False)
         if not request.get("id"):
             request["id"] = (self.select("MAX(id)", [], "character")[0][0] or 0) + 1
             new_character = True
@@ -512,6 +512,7 @@ class CharacterTable(Table):
                 ]
             )
             request = existing_player
+            request["new_character"] = True
         return self.add_or_update(request)
 
     def update_functions(self):

@@ -54,6 +54,20 @@ affixStats = {
 }
 ignore_enchant = [3, 18]
 
+class_enum = {
+    "Warrior": 1,
+    "Paladin": 2,
+    "Hunter": 4,
+    "Rogue": 8,
+    "Priest": 16,
+    "Deathknight": 32,
+    "Shaman": 64,
+    "Mage": 128,
+    "Warlock": 256,
+    "Monk": 512,
+    "Druid": 1024,
+}
+
 
 class BlizzardParser:
     def __init__(
@@ -113,6 +127,7 @@ class CharacterParser(BlizzardParser):
     ):
         super().__init__(namespace, region, version, token)
         self.character = character
+        self.character_class = None
         self.realm = realm.replace(" ", "-")
         self.base_url = "https://REGION.api.blizzard.com/profile/wow/character/REALM/CHARACTERNAME/TYPE?namespace=profile-NAMESPACE-REGION&locale=en_GB&access_token="
 
@@ -147,6 +162,9 @@ class CharacterParser(BlizzardParser):
         )
         character_template["active_spec"] = character.get("active_spec", {}).get(
             "name", "Adventurer"
+        )
+        self.character_class = (
+            character["character_class"]["name"].replace(" ", "").capitalize()
         )
         if (
             character_template["active_spec"]
@@ -341,6 +359,7 @@ class CharacterParser(BlizzardParser):
                 specialization["specialization_name"].replace(" ", "").capitalize()
             )
             current_spec["talents"] = []
+
             for talent in specialization.get("talents", []):
                 if (
                     not talents.get(talent["spell_tooltip"]["spell"]["id"])
@@ -602,7 +621,7 @@ class IconParser(BlizzardParser):
         return icon_template
 
 
-def find_glyph(glyph, version):
+def find_glyph(glyph, version, player_class):
     print(f"Trying to extract {glyph} from wowhead/{version}")
     wowhead_url = f"https://www.wowhead.com/{version}/"
 
@@ -624,8 +643,13 @@ def find_glyph(glyph, version):
         try:
             data = json.loads(array_text)
             for obj in data:
-                if obj["type"] == 6 and obj["lvjson"]["cat"] == -13:
-                    print(obj)
+                print(obj)
+                if (
+                    obj["type"] == 6
+                    and obj["lvjson"]["cat"] == -13
+                    and obj["lvjson"]["name"] == glyph["name"]
+                    and obj["lvjson"]["chrclass"] == class_enum[player_class]
+                ):
                     if not glyphs.get(glyph["id"]):
                         glyphs[glyph["id"]] = {}
                     glyphs[glyph["id"]][version] = {
@@ -715,12 +739,12 @@ if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
     test = CharacterParser(
-        "Heavenstamp",
+        "Feral",
         "Everlook",
         region="eu",
         version="mop",
     )
-    # print(test.get_character())
+    print(test.get_character())
     # print(test.get_sorted_equipment())
     print(test.get_talents())
     # test2 = CharacterParser("Zoo", "nazgrim", namespace="classic", region="us")
