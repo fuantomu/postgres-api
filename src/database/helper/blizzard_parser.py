@@ -389,7 +389,7 @@ class CharacterParser(BlizzardParser):
                     or not glyphs.get(glyph["id"], {}).get(self.version, {}).get("type")
                 ):
                     print(f"Glyph {glyph} is missing")
-                    find_glyph(glyph, self.version)
+                    find_glyph(glyph, self.version, self.character_class)
                 specialization["glyphs"].append(glyphs[glyph["id"]][self.version]["id"])
             specialization["active"] = specializations["specialization_groups"][index][
                 "is_active"
