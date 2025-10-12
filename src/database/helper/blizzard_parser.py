@@ -404,10 +404,6 @@ class CharacterParser(BlizzardParser):
                 specialization.get("specializations", []),
                 key=lambda x: x["spent_points"],
             )["specialization_name"]
-            current_spec["spent_points"] = "/".join(
-                str(_spec["spent_points"])
-                for _spec in specialization.get("specializations", [])
-            )
             current_spec["talents"] = []
             for spec in specialization.get("specializations", []):
 

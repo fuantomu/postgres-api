@@ -374,7 +374,6 @@ class CharacterTable(Table):
                 except KeyError:
                     continue
             current_spec["active"] = spec[4]
-            current_spec["spent_points"] = spec[6]
             specialization.append(current_spec)
         return specialization
 

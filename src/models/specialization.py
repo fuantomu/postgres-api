@@ -22,4 +22,3 @@ class SpecializationModel(BaseModel):
     glyphs: list[GlyphModel] = []
     active: bool = True
     version: str = "mop"
-    spent_points: str = "0"

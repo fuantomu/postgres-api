@@ -11,7 +11,6 @@ class CharacterSpecTable(Table):
         "glyphs": {"value": "INTEGER[] NOT NULL", "default": ""},
         "active": {"value": "BOOLEAN", "default": "'TRUE'"},
         "version": {"value": "varchar(8)", "default": "'mop'"},
-        "spent_points": {"value": "varchar(8)", "default": "'0/0/0'"},
         "PRIMARY KEY": {"value": "(id,name,version)", "default": ""},
     }
 
