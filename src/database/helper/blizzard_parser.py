@@ -642,9 +642,10 @@ def find_glyph(glyph, version, player_class):
                 print(obj)
                 if (
                     obj["type"] == 6
-                    and obj["lvjson"]["cat"] == -13
+                    and obj["lvjson"]["cat"] in [-13, 0]
                     and obj["lvjson"]["name"] == glyph["name"]
-                    and obj["lvjson"]["chrclass"] == class_enum[player_class]
+                    and obj["lvjson"].get("chrclass", class_enum[player_class])
+                    == class_enum[player_class]
                 ):
                     if not glyphs.get(glyph["id"]):
                         glyphs[glyph["id"]] = {}
@@ -663,6 +664,7 @@ def find_glyph(glyph, version, player_class):
                         )
                         icon_text = icon_text[0].replace("classic_", "")
                         glyphs[glyph["id"]][version]["icon"] = icon_text
+                        break
 
         except json.JSONDecodeError as e:
             print("JSON parsing error:", e)
