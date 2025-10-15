@@ -6,6 +6,7 @@ from src.models.character import (
     CharacterStatisticModel,
 )
 from src.models.guild import GuildModel
+from src.models.item import ItemModel
 from src.models.specialization import SpecializationModel
 
 
@@ -31,3 +32,7 @@ class CharacterStatisticResponseModel(BaseModel):
 
 class GuildResponseModel(BaseModel):
     Result: GuildModel | List[GuildModel]
+
+
+class ItemResponseModel(BaseModel):
+    Result: ItemModel

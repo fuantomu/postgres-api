@@ -57,15 +57,12 @@ class GuildTable(Table):
 
     def add_or_update(self, request):
         query = f"select id,version from guild where (id = '{request['id']}' or name = '{request['name']}') and region = '{request["region"]}' and realm = '{request['realm']}'"
-        print(query)
         found_item = self.select_query(query)
-        print(found_item)
 
         if found_item:
             guild_same_version = [
                 guild for guild in found_item if guild[1] == request["version"]
             ]
-            print(guild_same_version)
 
             if guild_same_version:
                 self.update(

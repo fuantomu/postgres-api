@@ -499,14 +499,21 @@ class ItemParser(BlizzardParser):
             .replace("REGION", self.region.lower())
         )
 
-    def get_item(self, request: dict):
-        if items.get(request["id"], {}).get(self.version):
-            return self.parse_item(items[request["id"]][self.version])
+    def get_item(self, id: int):
+        if items.get(id, {}).get(self.version):
+            if items[id][self.version]["slot"]["name"] == "item":
+                return items[id][self.version]
+            return self.parse_item(items[id][self.version])
         item: dict = requests.get(
-            self.get_base_url().replace("ITEMID", str(request.get("id"))),
+            self.get_base_url().replace("ITEMID", str(id)),
             headers=self.headers,
         ).json()
-        item["slot"] = {"name": request["slot"]}
+        item["slot"] = {
+            "name": self.match_slot(
+                item["inventory_type"]["name"].replace("-", "_").lower()
+            )
+        }
+
         item["item"] = item["preview_item"]["item"]
 
         if not items.get(item["id"]):
@@ -516,6 +523,9 @@ class ItemParser(BlizzardParser):
         new_dict = dict(sorted(items.items()))
         with open("src/helper/items.py", "w") as f:
             f.write(f"items = {str(new_dict)}")
+
+        if item["slot"]["name"] == "item":
+            return item
         return self.parse_item(item)
 
     def parse_item(
@@ -664,6 +674,17 @@ class ItemParser(BlizzardParser):
 
         return item_model
 
+    def match_slot(self, inventory_type):
+        match inventory_type:
+            case "two_hand" | "one_hand":
+                return "main_hand"
+            case "off hand":
+                return "off_hand"
+            case "non_equippable":
+                return "item"
+            case _:
+                return inventory_type
+
 
 def find_glyph(glyph, version, player_class):
     print(f"Trying to extract {glyph} from wowhead/{version}")
@@ -806,5 +827,4 @@ if __name__ == "__main__":
     # print(test3.get_talents())
     # print(test3.get_statistics())
     test4 = ItemParser(region="eu", version="mop")
-    request = {"id": 86905, "slot": "main_hand"}
-    print(test4.get_item(request))
+    print(test4.get_item(76642))

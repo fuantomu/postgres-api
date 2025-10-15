@@ -47,6 +47,7 @@ class Server:
     def initialize_endpoints(self):
         self.routers["Guild"] = routers.Guild()
         self.routers["Character"] = routers.Character()
+        self.routers["Item"] = routers.Item()
 
         for key, value in self.routers.items():
             self.app.include_router(value.router, prefix=f"/{key}", tags=[key])
