@@ -177,38 +177,25 @@ class CharacterTable(Table):
 
     def add_or_update(self, request):
         self.logger.debug(f"AddOrUpdate {self.name}: {request}")
-        new_character = request.pop("new_character", False)
         if not request.get("id"):
-            request["id"] = (self.select("MAX(id)", [], "character")[0][0] or 0) + 1
-            new_character = True
-            found_item = self.select(
-                "id",
-                [
-                    ("name", "=", request["name"]),
-                    ("realm", "=", request["realm"]),
-                    ("region", "=", request["region"]),
-                    ("version", "=", request["version"]),
-                    "AND",
-                ],
-                "character",
-            )
-        else:
-            found_item = self.select(
-                "id",
-                [
-                    ("id", "=", request["id"]),
-                    ("realm", "=", request["realm"]),
-                    ("region", "=", request["region"]),
-                    ("version", "=", request["version"]),
-                    "AND",
-                ],
-                "character",
-            )
-            if not found_item:
-                found_item = self.select(
-                    "id",
+            request["id"] = self.select("MAX(id)", [], "character")[0][0] + 1
+        query = f"select id,version from character where (id = '{request['id']}' or name = '{request['name']}') and region = '{request["region"]}' and realm = '{request['realm']}'"
+        found_item = self.select_query(query)
+
+        if found_item:
+            character_same_version = [
+                character_same_version
+                for character_same_version in found_item
+                if character_same_version[1] == request["version"]
+            ]
+
+            if character_same_version:
+                if request["guild"] == -1:
+                    request.pop("guild")
+                self.update(
+                    request,
                     [
-                        ("name", "=", request["name"]),
+                        ("id", "=", character_same_version[0][0]),
                         ("realm", "=", request["realm"]),
                         ("region", "=", request["region"]),
                         ("version", "=", request["version"]),
@@ -216,36 +203,18 @@ class CharacterTable(Table):
                     ],
                     "character",
                 )
-        if found_item:
-            if request["guild"] == -1:
-                request["guild"] = None
-            self.update(
-                request,
-                [
-                    ("id", "=", found_item[0][0]),
-                    ("realm", "=", request["realm"]),
-                    ("region", "=", request["region"]),
-                    ("version", "=", request["version"]),
-                    "AND",
-                ],
-                "character",
-            )
-        else:
-            if request["guild"] == -1:
-                request["guild"] = None
-            if new_character:
-                id = self.updateCharacter(
-                    request["name"],
-                    request["realm"],
-                    region=request["region"],
-                    version=request["version"],
-                    new_character=new_character,
-                )
-                if id != "Not Found":
-                    return f"{id}"
-            self.insert(request, "character")
+                return "Success"
+        if request["guild"] == -1:
+            request.pop("guild", None)
+        request.pop("guild_name", None)
+
+        self.insert(request, "character")
+        result = self.updateCharacter(
+            request["name"], request["realm"], request["region"], request["version"]
+        )
+        if result == "Not Found":
             return f"{request['id']}"
-        return "Success"
+        return f"{result}"
 
     def get_equipment(self, request: str | dict):
         self.logger.debug(f"GetEquipment {self.name}: {request}")
@@ -425,9 +394,9 @@ class CharacterTable(Table):
 
         return stat_template
 
-    def updateCharacter(self, character, realm, region, version, new_character=False):
+    def updateCharacter(self, character, realm, region, version):
         self.logger.debug(
-            f"Updating {self.name}: {character},{realm},{region},{version},{new_character}"
+            f"Updating {self.name}: {character},{realm},{region},{version}"
         )
         character_parser = CharacterParser(
             character, realm, region=region, version=version
@@ -450,10 +419,7 @@ class CharacterTable(Table):
 
             GuildTable.add_or_update(self, guild)
 
-        if new_character:
-            self.insert(existing_player, "character")
-        else:
-            self.add_or_update(existing_player)
+        self.add_or_update(existing_player)
 
         equipment = character_parser.get_sorted_equipment()
         for slot in equipment:
@@ -493,25 +459,60 @@ class CharacterTable(Table):
 
     def post(self, request):
         self.logger.debug(f"Post {self.name}: {request}")
-        character_parser = CharacterParser(
-            request["name"],
-            request["realm"],
-            region=request["region"],
-            version=request["version"],
-        )
-        existing_player = character_parser.get_character()
+        query = f"select id from character where (id = '{request['id']}' and name != '{request['name']}') and region = '{request["region"]}' and realm = '{request['realm']}'"
+        result = self.select_query(query)
 
-        if not existing_player.get("error"):
-            existing_player.pop("guild_name")
-            self.delete(
-                [
-                    ("id", "=", request["id"]),
-                    ("version", "=", request["version"]),
-                    "AND",
-                ]
+        # Character name was changed
+        if len(result) > 0:
+            character_parser = CharacterParser(
+                request["name"],
+                request["realm"],
+                region=request["region"],
+                version=request["version"],
             )
-            request = existing_player
-            request["new_character"] = True
+            existing_player = character_parser.get_character()
+            if (
+                not existing_player.get("error")
+                and existing_player.get("id") != result[0]
+            ):
+                CharacterItemTable.delete(
+                    self,
+                    [
+                        ("character_id", "=", request["id"]),
+                        ("version", "=", request["version"]),
+                        "AND",
+                    ],
+                    "characteritem",
+                )
+                CharacterSpecTable.delete(
+                    self,
+                    [
+                        ("id", "=", request["id"]),
+                        ("version", "=", request["version"]),
+                        "AND",
+                    ],
+                    "characterspec",
+                )
+                CharacterStatTable.delete(
+                    self,
+                    [
+                        ("id", "=", request["id"]),
+                        ("version", "=", request["version"]),
+                        "AND",
+                    ],
+                    "characterstat",
+                )
+                self.delete(
+                    [
+                        ("id", "=", request["id"]),
+                        ("version", "=", request["version"]),
+                        ("realm", "=", request["realm"]),
+                        ("region", "=", request["region"]),
+                        "AND",
+                    ]
+                )
+                return self.add_or_update(existing_player)
+
         return self.add_or_update(request)
 
     def update_functions(self):

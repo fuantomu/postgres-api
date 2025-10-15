@@ -56,30 +56,62 @@ class GuildTable(Table):
         return super().delete_entry(request)
 
     def add_or_update(self, request):
-        if not request.get("id"):
-            request["id"] = self.select("MAX(id)", [], "guild")[0][0] + 1
+        query = f"select id,version from guild where (id = '{request['id']}' or name = '{request['name']}') and region = '{request["region"]}' and realm = '{request['realm']}'"
+        print(query)
+        found_item = self.select_query(query)
+        print(found_item)
 
-        found_item = self.select(
-            "id",
-            [
-                ("name", "=", request["name"]),
-                ("realm", "=", request["realm"]),
-                ("version", "=", request["version"]),
-                "AND",
-            ],
-            "guild",
-        )
         if found_item:
-            self.update(
-                request,
-                [
-                    ("name", "=", request["name"]),
-                    ("realm", "=", request["realm"]),
-                    ("version", "=", request["version"]),
-                    "AND",
-                ],
-                "guild",
-            )
+            guild_same_version = [
+                guild for guild in found_item if guild[1] == request["version"]
+            ]
+            print(guild_same_version)
+
+            if guild_same_version:
+                self.update(
+                    request,
+                    [
+                        ("name", "=", request["name"]),
+                        ("realm", "=", request["realm"]),
+                        ("version", "=", request["version"]),
+                        "AND",
+                    ],
+                    "guild",
+                )
+                return "Success"
+        request["id"] = self.select("MAX(id)", [], "guild")[0][0] + 1
+        if request["created_timestamp"] == 0:
+            request["created_timestamp"] = datetime.now().timestamp() * 1000
+        self.insert(request, "guild")
+        return f"{request['id']}"
+
+        # found_item = self.select(
+        #     ["id", "version"],
+        #     [
+        #         ("name", "=", request["name"]),
+        #         ("realm", "=", request["realm"]),
+        #         "AND",
+        #     ],
+        #     "guild",
+        # )
+        if found_item:
+            if found_item[0][1] == request["version"]:
+                self.update(
+                    request,
+                    [
+                        ("name", "=", request["name"]),
+                        ("realm", "=", request["realm"]),
+                        ("version", "=", request["version"]),
+                        "AND",
+                    ],
+                    "guild",
+                )
+            else:
+                request["id"] = self.select("MAX(id)", [], "guild")[0][0] + 1
+                if request["created_timestamp"] == 0:
+                    request["created_timestamp"] = datetime.now().timestamp() * 1000
+                self.insert(request, "guild")
+                return f"{request['id']}"
         else:
             if request["created_timestamp"] == 0:
                 request["created_timestamp"] = datetime.now().timestamp() * 1000

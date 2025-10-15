@@ -23,7 +23,8 @@ class CharacterModel(BaseModel):
         "Bloodelf",
         "Goblin",
         "Pandaren",
-    ] = "Human"
+        "Alien",
+    ] = "Alien"
     character_class: Literal[
         "Adventurer",
         "Paladin",
@@ -81,7 +82,9 @@ class RatingModel(BaseModel):
 class CharacterStatisticModel(BaseModel):
     health: int = 0
     power: int | None = None
-    power_type: Literal["Mana", "Rage", "Energy", "Focus", "Runic Power"] = "Mana"
+    power_type: Literal[
+        "Mana", "Rage", "Energy", "Focus", "Runic Power", "Maelstrom"
+    ] = "Mana"
     strength: int = 0
     agility: int = 0
     intellect: int = 0

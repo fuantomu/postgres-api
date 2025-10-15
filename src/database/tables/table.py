@@ -144,9 +144,7 @@ class Table:
         if not self.exists(table_name=table_name):
             raise Exception(f"Table '{table_name}' does not exist")
 
-        self.logger.debug(
-            f"Trying to delete {where} from '{table_name}' where '{where}'"
-        )
+        self.logger.debug(f"Trying to delete ALL from '{table_name}' where '{where}'")
         query = psycopg.sql.SQL("DELETE FROM {table}").format(
             table=psycopg.sql.Identifier(table_name)
         )
@@ -300,3 +298,12 @@ class Table:
     def delete_entry(self, request: dict):
         self.delete([(request["key"], "=", request["value"])])
         return f"Deleted {self.name} with {request['key']} '{request['value']}'"
+
+    def select_query(self, query, params=None):
+        query = psycopg.sql.SQL(query)
+        with self.connection.cursor() as cursor:
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            return cursor.fetchall()
