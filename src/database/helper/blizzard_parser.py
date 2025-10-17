@@ -183,7 +183,6 @@ class CharacterParser(BlizzardParser):
         character_template["last_login_timestamp"] = character.get(
             "last_login_timestamp"
         )
-        character_template["average_item_level"] = character["average_item_level"]
         character_template["equipped_item_level"] = character["equipped_item_level"]
         character_template["active_title"] = character.get(
             "active_title", {"name": None}

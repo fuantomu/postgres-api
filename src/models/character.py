@@ -45,7 +45,6 @@ class CharacterModel(BaseModel):
     level: int = 1
     achievement_points: int = 0
     last_login_timestamp: int | None = None
-    average_item_level: int = 0
     equipped_item_level: int = 0
     active_title: str | None = None
     region: Literal["eu", "us", "kr", "tw", "cn"] = "eu"

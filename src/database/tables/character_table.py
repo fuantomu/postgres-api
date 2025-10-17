@@ -32,7 +32,6 @@ class CharacterTable(Table):
         "level": {"value": "SMALLINT NOT NULL", "default": 1},
         "achievement_points": {"value": "INTEGER NOT NULL", "default": 0},
         "last_login_timestamp": {"value": "BIGINT NOT NULL", "default": 0},
-        "average_item_level": {"value": "SMALLINT NOT NULL", "default": 0},
         "equipped_item_level": {"value": "SMALLINT NOT NULL", "default": 0},
         "active_title": {"value": "varchar(64)"},
         "PRIMARY KEY": {"value": "(id,version)", "default": ""},
