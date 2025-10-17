@@ -1,4 +1,8 @@
-from src.models.character import CharacterModel, CharacterParseModel
+from src.models.character import (
+    CharacterEquipmentModel,
+    CharacterModel,
+    CharacterParseModel,
+)
 from src.models.response_model import (
     BaseResponseModel,
     CharacterEquipmentResponseModel,
@@ -38,6 +42,15 @@ class Character(Router):
             status_code=201,
             summary="Retrieve player equipment",
             response_model=CharacterEquipmentResponseModel,
+            responses={400: {"model": BaseResponseModel}},
+        )
+        self.router.add_api_route(
+            "/Equipment",
+            self.post_equipment,
+            methods=["Post"],
+            status_code=201,
+            summary="Add/Update player equipment",
+            response_model=BaseResponseModel,
             responses={400: {"model": BaseResponseModel}},
         )
         self.router.add_api_route(
@@ -111,6 +124,18 @@ class Character(Router):
                 "version": version,
             },
         )
+
+    async def post_equipment(
+        self, item: CharacterEquipmentModel, id: str = None, version: str = None
+    ):
+        self.logger.info(f"Received POST request on {self.name}")
+        self.logger.debug(f"Parameters: {item},{id}")
+        request = item.model_dump()
+        request["id"] = id
+        if version:
+            version = version.lower()
+        request["version"] = version
+        return super().redirect_request("PostEquipment", request)
 
     def get_specialization(
         self,

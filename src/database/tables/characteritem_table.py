@@ -65,6 +65,7 @@ class CharacterItemTable(Table):
         )
 
     def add_or_update(self, request):
+        self.logger.debug(f"AddOrUpdate {self.name}: {request}")
         found_item = self.select(
             ["character_id", "slot"],
             [

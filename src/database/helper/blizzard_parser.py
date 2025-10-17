@@ -508,6 +508,8 @@ class ItemParser(BlizzardParser):
             self.get_base_url().replace("ITEMID", str(id)),
             headers=self.headers,
         ).json()
+        if item.get("code") == 404:
+            return "Error 404"
         item["slot"] = {
             "name": self.match_slot(
                 item["inventory_type"]["name"].replace("-", "_").lower()
@@ -525,7 +527,19 @@ class ItemParser(BlizzardParser):
             f.write(f"items = {str(new_dict)}")
 
         if item["slot"]["name"] == "item":
-            return item
+            iconparser = IconParser(
+                item["item"]["id"],
+                "item",
+                namespace=get_namespace(item["item"]["key"]["href"]) or self.namespace,
+            )
+            icon = iconparser.get_icon()
+            return {
+                "name": item["name"],
+                "id": item["id"],
+                "icon": icon["icon"],
+                "quality": item["quality"]["name"],
+                "inventory_type": item["inventory_type"]["name"],
+            }
         return self.parse_item(item)
 
     def parse_item(
@@ -682,6 +696,12 @@ class ItemParser(BlizzardParser):
                 return "off_hand"
             case "non_equippable":
                 return "item"
+            case "trinket":
+                return "trinket_1"
+            case "shoulder":
+                return "shoulders"
+            case "finger":
+                return "ring_1"
             case _:
                 return inventory_type
 

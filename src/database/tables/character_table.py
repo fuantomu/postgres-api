@@ -1,5 +1,5 @@
 import json
-from src.database.helper.blizzard_parser import CharacterParser, GuildParser
+from src.database.helper.blizzard_parser import CharacterParser, GuildParser, slotNames
 from src.database.tables.characteritem_table import CharacterItemTable
 from src.database.tables.characterspec_table import CharacterSpecTable
 from src.database.tables.characterstat_table import CharacterStatTable
@@ -190,7 +190,7 @@ class CharacterTable(Table):
             ]
 
             if character_same_version:
-                if request["guild"] == -1:
+                if request.get("guild") == -1:
                     request.pop("guild")
                 self.update(
                     request,
@@ -515,6 +515,35 @@ class CharacterTable(Table):
 
         return self.add_or_update(request)
 
+    def post_equipment(self, request):
+        self.logger.debug(f"PostEquipment {self.name}: {request}")
+        found_character = self.select(
+            "id",
+            [
+                ("id", "=", request["id"]),
+                ("version", "=", request["version"]),
+                "AND",
+            ],
+        )
+        if len(found_character) == 0:
+            raise Exception(
+                f"No character found for id '{request['id']}' in '{request['version']}'"
+            )
+
+        for slot in slotNames:
+            if not request[slot]:
+                CharacterItemTable.delete_entry(
+                    self,
+                    {
+                        "character_id": request["id"],
+                        "slot": slot.capitalize(),
+                        "version": request["version"],
+                    },
+                )
+            else:
+                CharacterItemTable.add_or_update(self, request[slot])
+        return "Success"
+
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")
         self.set_function("Get", self.get)
@@ -524,3 +553,4 @@ class CharacterTable(Table):
         self.set_function("GetSpecialization", self.get_specialization)
         self.set_function("GetStatistic", self.get_stats)
         self.set_function("Post", self.post)
+        self.set_function("PostEquipment", self.post_equipment)
