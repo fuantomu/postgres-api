@@ -305,6 +305,7 @@ class CharacterTable(Table):
             current_spec = SpecializationModel().model_dump()
             current_spec["id"] = spec[0]
             current_spec["name"] = spec[1]
+            current_spec["version"] = request["version"]
             current_spec["talents"] = []
             for talent in json.loads(spec[2].replace("'", '"')):
                 try:
@@ -341,7 +342,7 @@ class CharacterTable(Table):
                     current_spec["glyphs"].append(temp_glyph)
                 except KeyError:
                     continue
-            current_spec["active"] = spec[4]
+            current_spec["spec_id"] = spec[4]
             specialization.append(current_spec)
         return specialization
 
@@ -543,6 +544,31 @@ class CharacterTable(Table):
                 CharacterItemTable.add_or_update(self, request[slot])
         return "Success"
 
+    def post_specialization(self, request):
+        self.logger.debug(f"PostSpecialization {self.name}: {request}")
+        found_character = self.select(
+            "id",
+            [
+                ("id", "=", request["id"]),
+                ("version", "=", request["version"]),
+                "AND",
+            ],
+        )
+        if len(found_character) == 0:
+            raise Exception(
+                f"No character found for id '{request['id']}' in '{request['version']}'"
+            )
+
+        request["talents"] = str(
+            [
+                {"id": talent["id"], "rank": talent["rank"]}
+                for talent in request["talents"]
+            ]
+        )
+        request["glyphs"] = [glyph["id"] for glyph in request["glyphs"]]
+
+        return CharacterSpecTable.add_or_update(self, request)
+
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")
         self.set_function("Get", self.get)
@@ -553,3 +579,4 @@ class CharacterTable(Table):
         self.set_function("GetStatistic", self.get_stats)
         self.set_function("Post", self.post)
         self.set_function("PostEquipment", self.post_equipment)
+        self.set_function("PostSpecialization", self.post_specialization)

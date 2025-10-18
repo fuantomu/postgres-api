@@ -10,6 +10,7 @@ from src.models.response_model import (
     CharacterSpecializationResponseModel,
     CharacterStatisticResponseModel,
 )
+from src.models.specialization import SpecializationModel
 from src.routers.base_router import Router
 
 
@@ -49,7 +50,7 @@ class Character(Router):
             self.post_equipment,
             methods=["Post"],
             status_code=201,
-            summary="Add/Update player equipment",
+            summary="Add or update player equipment",
             response_model=BaseResponseModel,
             responses={400: {"model": BaseResponseModel}},
         )
@@ -60,6 +61,15 @@ class Character(Router):
             status_code=201,
             summary="Retrieve player specializations",
             response_model=CharacterSpecializationResponseModel,
+            responses={400: {"model": BaseResponseModel}},
+        )
+        self.router.add_api_route(
+            "/Specialization",
+            self.post_specialization,
+            methods=["POST"],
+            status_code=201,
+            summary="Add or update player specializations",
+            response_model=BaseResponseModel,
             responses={400: {"model": BaseResponseModel}},
         )
         self.router.add_api_route(
@@ -165,6 +175,12 @@ class Character(Router):
                 "version": version,
             },
         )
+
+    async def post_specialization(self, specialization: SpecializationModel):
+        self.logger.info(f"Received POST request on {self.name}")
+        self.logger.debug(f"Parameters: {specialization},{id}")
+        request = specialization.model_dump()
+        return super().redirect_request("PostSpecialization", request)
 
     def get_statistic(
         self,

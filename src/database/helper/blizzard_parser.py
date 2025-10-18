@@ -259,9 +259,7 @@ class CharacterParser(BlizzardParser):
                     print(f"Glyph {glyph} is missing")
                     find_glyph(glyph, self.version, self.character_class)
                 specialization["glyphs"].append(glyphs[glyph["id"]][self.version]["id"])
-            specialization["active"] = specializations["specialization_groups"][index][
-                "is_active"
-            ]
+            specialization["spec_id"] = index
         return specs
 
     def get_talents_classic_fresh(self, specializations):
@@ -294,7 +292,7 @@ class CharacterParser(BlizzardParser):
                             "rank": talent["talent_rank"],
                         }
                     )
-            current_spec["active"] = specialization.get("is_active", False)
+            current_spec["spec_id"] = len(specs)
             specs.append(current_spec)
         return specs
 

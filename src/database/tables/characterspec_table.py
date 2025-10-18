@@ -9,9 +9,9 @@ class CharacterSpecTable(Table):
         "name": {"value": "varchar(64) NOT NULL", "default": "'Unknown'"},
         "talents": {"value": "TEXT NOT NULL", "default": ""},
         "glyphs": {"value": "INTEGER[] NOT NULL", "default": ""},
-        "active": {"value": "BOOLEAN", "default": "'TRUE'"},
+        "spec_id": {"value": "SMALLINT", "default": ""},
         "version": {"value": "varchar(8)", "default": "'mop'"},
-        "PRIMARY KEY": {"value": "(id,name,version)", "default": ""},
+        "PRIMARY KEY": {"value": "(id,spec_id,version)", "default": ""},
     }
 
     def get(self, request: str | dict):
@@ -51,7 +51,7 @@ class CharacterSpecTable(Table):
             ["id", "name"],
             [
                 ("id", "=", request["id"]),
-                ("name", "=", request["name"]),
+                ("spec_id", "=", request["spec_id"]),
                 ("version", "=", request["version"]),
                 "AND",
             ],
@@ -62,7 +62,7 @@ class CharacterSpecTable(Table):
                 request,
                 [
                     ("id", "=", request["id"]),
-                    ("name", "=", request["name"]),
+                    ("spec_id", "=", request["spec_id"]),
                     ("version", "=", request["version"]),
                     "AND",
                 ],
@@ -70,16 +70,6 @@ class CharacterSpecTable(Table):
             )
         else:
             self.insert(request, "characterspec")
-        if request["version"] == "classic" and request["active"]:
-            self.update(
-                {"active_spec": request["name"]},
-                [
-                    ("id", "=", request["id"]),
-                    ("version", "=", request["version"]),
-                    "AND",
-                ],
-                "character",
-            )
         return "Success"
 
     def update_functions(self):

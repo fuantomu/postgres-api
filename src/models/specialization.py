@@ -20,5 +20,5 @@ class SpecializationModel(BaseModel):
     name: str = "Unknown"
     talents: list[TalentModel] = []
     glyphs: list[GlyphModel] = []
-    active: bool = True
+    spec_id: int = 0
     version: str = "mop"
