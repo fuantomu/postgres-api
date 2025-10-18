@@ -159,6 +159,7 @@ class CharacterTable(Table):
                 talent["id"] = existing_player["id"]
                 talent["version"] = request.version
                 talent["talents"] = str(talent["talents"])
+                talent["name"] = f"{existing_player['character_class']}{talent['name']}"
                 CharacterSpecTable.add_or_update(self, talent)
 
             stats = character_parser.get_statistics()
