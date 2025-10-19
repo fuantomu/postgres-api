@@ -42,3 +42,12 @@ class ItemModel(BaseModel):
     inventory_type: str | None = None
     enchantment: str | None = None
     version: str = "mop"
+
+
+class EnchantmentModel(BaseModel):
+    id: int = 0
+    name: str = "Test"
+    display_string: str | None = None
+    slot: str | None = None
+    source_id: int | None = None
+    type: int | None = None

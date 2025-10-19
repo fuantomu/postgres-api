@@ -211,7 +211,7 @@ class CharacterParser(BlizzardParser):
 
         return sortedEquipment
 
-    def get_talents(self):
+    def get_talents(self, player_class: str = None):
         specializations = requests.get(
             self.get_base_url("specializations"),
             headers=self.headers,
@@ -255,9 +255,14 @@ class CharacterParser(BlizzardParser):
                     or self.version not in glyphs.get(glyph["id"], {}).keys()
                     or not glyphs.get(glyph["id"], {}).get(self.version, {}).get("icon")
                     or not glyphs.get(glyph["id"], {}).get(self.version, {}).get("type")
+                    or not glyphs.get(glyph["id"], {})
+                    .get(self.version, {})
+                    .get("character_class")
                 ):
                     print(f"Glyph {glyph} is missing")
-                    find_glyph(glyph, self.version, self.character_class)
+                    find_glyph(
+                        glyph, self.version, self.character_class or player_class
+                    )
                 specialization["glyphs"].append(glyphs[glyph["id"]][self.version]["id"])
             specialization["spec_id"] = index
         return specs
@@ -564,9 +569,21 @@ class ItemParser(BlizzardParser):
                         not enchantments.get(enchant["enchantment_id"])
                         or self.version
                         not in enchantments[enchant["enchantment_id"]].keys()
+                        or enchantments[enchant["enchantment_id"]]
+                        .get(self.version, {})
+                        .get("slot", -1)
+                        == -1
+                        or enchantments[enchant["enchantment_id"]]
+                        .get(self.version, {})
+                        .get("type", -1)
+                        == -1
+                        or enchantments[enchant["enchantment_id"]]
+                        .get(self.version, {})
+                        .get("source_id", -1)
+                        == -1
                     ):
                         print(f"Enchant {enchant} is missing")
-                        save_enchant(enchant, self.version)
+                        save_enchant(enchant, self.version, slot_name)
 
                 filtered = [
                     enchantments[enchant][self.version]
@@ -733,6 +750,8 @@ def find_glyph(glyph, version, player_class):
                     and obj["lvjson"].get("chrclass", class_enum[player_class])
                     == class_enum[player_class]
                 ):
+                    if not glyph.get("id"):
+                        glyph["id"] = obj["lvjson"]["id"]
                     if not glyphs.get(glyph["id"]):
                         glyphs[glyph["id"]] = {}
                     glyphs[glyph["id"]][version] = {
@@ -740,6 +759,7 @@ def find_glyph(glyph, version, player_class):
                         "id": obj["typeId"],
                         "icon": None,
                         "type": None,
+                        "character_class": player_class,
                     }
                     response = requests.get(f'{wowhead_url}spell={obj["typeId"]}')
                     found = re.search(r"Icon\.create\((.*?)\)", response.text)
@@ -766,6 +786,8 @@ def find_glyph(glyph, version, player_class):
     new_dict = dict(sorted(glyphs.items()))
     with open("src/helper/glyphs.py", "w") as f:
         f.write(f"glyphs = {str(new_dict)}")
+
+    return glyphs[glyph["id"]][version] if glyph.get("id") else None
 
 
 def save_talent(talent, version):
@@ -795,8 +817,7 @@ def save_talent(talent, version):
         f.write(f"talents = {str(new_dict)}")
 
 
-def save_enchant(enchant, version):
-
+def save_enchant(enchant, version: str, slot: str):
     if not enchantments.get(enchant["enchantment_id"]):
         enchantments[enchant["enchantment_id"]] = {}
     enchantments[enchant["enchantment_id"]][version] = {
@@ -807,6 +828,13 @@ def save_enchant(enchant, version):
         "display_string": enchant.get(
             "display_string", enchant.get("source_item", {}).get("name", "Unknown")
         ).replace("Enchanted ", ""),
+        "source_id": enchant.get("source_item", {}).get("id", None),
+        "type": enchant.get("enchantment_slot", {}).get("id", None),
+        "slot": (
+            slot
+            if enchant.get("enchantment_slot", {}).get("id", None) in [0, 6, 7, 8, 9]
+            else "Other"
+        ),
     }
 
     new_dict = dict(sorted(enchantments.items()))
@@ -822,15 +850,15 @@ def get_namespace(link: str):
 if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
-    # test = CharacterParser(
-    #     "Feral",
-    #     "Everlook",
-    #     region="eu",
-    #     version="mop",
-    # )
+    test = CharacterParser(
+        "Feral",
+        "Everlook",
+        region="eu",
+        version="mop",
+    )
     # print(test.get_character())
     # print(test.get_sorted_equipment())
-    # print(test.get_talents())
+    print(test.get_talents(player_class="Druid"))
     # test2 = CharacterParser("Zoo", "nazgrim", namespace="classic", region="us")
     # print(test2.get_talents())
     # test3 = CharacterParser(
@@ -843,5 +871,6 @@ if __name__ == "__main__":
     # print(test3.get_sorted_equipment())
     # print(test3.get_talents())
     # print(test3.get_statistics())
-    test4 = ItemParser(region="eu", version="mop")
-    print(test4.get_item(76642))
+    # test4 = ItemParser(region="eu", version="mop")
+    # print(test4.get_item(76642))
+    # find_glyph({"name": "Glyph of Winged Vengeance"}, "mop", "Paladin")

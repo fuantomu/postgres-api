@@ -6,8 +6,8 @@ from src.models.character import (
     CharacterStatisticModel,
 )
 from src.models.guild import GuildModel
-from src.models.item import ItemModel
-from src.models.specialization import SpecializationModel
+from src.models.item import EnchantmentModel, ItemModel
+from src.models.specialization import GlyphModel, SpecializationModel
 
 
 class BaseResponseModel(BaseModel):
@@ -36,3 +36,11 @@ class GuildResponseModel(BaseModel):
 
 class ItemResponseModel(BaseModel):
     Result: ItemModel
+
+
+class GlyphResponseModel(BaseModel):
+    Result: List[GlyphModel]
+
+
+class EnchantmentResponseModel(BaseModel):
+    Result: List[EnchantmentModel]

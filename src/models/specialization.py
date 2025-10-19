@@ -13,6 +13,7 @@ class GlyphModel(BaseModel):
     name: str = "Unknown"
     icon: str | None = None
     type: str | None = None
+    character_class: str | None = None
 
 
 class SpecializationModel(BaseModel):
