@@ -327,6 +327,8 @@ class CharacterTable(Table):
                     continue
             current_spec["glyphs"] = []
             for glyph in spec[3]:
+                if glyph == 0:
+                    continue
                 try:
                     temp_glyph = GlyphModel().model_dump()
                     temp_glyph["id"] = glyph
