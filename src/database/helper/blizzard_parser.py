@@ -251,7 +251,9 @@ class CharacterParser(BlizzardParser):
             for glyph in specializations["specialization_groups"][index].get(
                 "glyphs", []
             ):
-                specialization["glyphs"].append(glyph_parser.find_glyph(glyph))
+                specialization["glyphs"].append(
+                    glyph_parser.fetch_search(glyph["name"], "glyph")[0]["id"]
+                )
             specialization["spec_id"] = index
         return specs
 
@@ -977,15 +979,15 @@ def get_namespace(link: str):
 if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
-    # test = CharacterParser(
-    #     "Feral",
-    #     "Everlook",
-    #     region="eu",
-    #     version="mop",
-    # )
+    test = CharacterParser(
+        "Feral",
+        "Everlook",
+        region="eu",
+        version="mop",
+    )
     # print(test.get_character())
     # print(test.get_sorted_equipment())
-    # print(test.get_talents(player_class="Druid"))
+    print(test.get_talents(player_class="Druid"))
     # test2 = CharacterParser("Zoo", "nazgrim", namespace="classic", region="us")
     # print(test2.get_talents())
     # test3 = CharacterParser(
@@ -1001,6 +1003,6 @@ if __name__ == "__main__":
     # test4 = ItemParser(region="eu", version="mop")
     # print(test4.get_item(76642))
     # find_glyph(146959, "mop", "Paladin")
-    parser = WowheadParser("mop")
-    test = parser.fetch_search("Winged Vengeance", search_type="spell")
-    print(test)
+    # parser = WowheadParser("mop")
+    # test = parser.fetch_search("Winged Vengeance", search_type="spell")
+    # print(test)
