@@ -339,6 +339,9 @@ class CharacterTable(Table):
                         temp_glyph["name"] = found_glyph[0]["name"]
                         temp_glyph["icon"] = found_glyph[0].get("icon")
                         temp_glyph["type"] = found_glyph[0].get("type")
+                        temp_glyph["character_class"] = found_glyph[0].get(
+                            "character_class"
+                        )
 
                     current_spec["glyphs"].append(temp_glyph)
                 except KeyError:

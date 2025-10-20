@@ -11,7 +11,7 @@ from src.models.character import (
 from src.models.guild import GuildModel
 from src.models.icon import IconModel
 from src.models.item import ItemModel
-from src.models.specialization import SpecializationModel
+from src.models.specialization import GlyphModel, SpecializationModel
 from src.helper.glyphs import glyphs
 from src.helper.talents import talents
 from src.helper.enchantments import enchantments
@@ -246,24 +246,12 @@ class CharacterParser(BlizzardParser):
                 )
             specs.append(current_spec)
 
+        glyph_parser = GlyphParser(self.version, self.character_class or player_class)
         for index, specialization in enumerate(specs):
             for glyph in specializations["specialization_groups"][index].get(
                 "glyphs", []
             ):
-                if (
-                    not glyphs.get(glyph["id"])
-                    or self.version not in glyphs.get(glyph["id"], {}).keys()
-                    or not glyphs.get(glyph["id"], {}).get(self.version, {}).get("icon")
-                    or not glyphs.get(glyph["id"], {}).get(self.version, {}).get("type")
-                    or not glyphs.get(glyph["id"], {})
-                    .get(self.version, {})
-                    .get("character_class")
-                ):
-                    print(f"Glyph {glyph} is missing")
-                    find_glyph(
-                        glyph, self.version, self.character_class or player_class
-                    )
-                specialization["glyphs"].append(glyphs[glyph["id"]][self.version]["id"])
+                specialization["glyphs"].append(glyph_parser.find_glyph(glyph))
             specialization["spec_id"] = index
         return specs
 
@@ -720,79 +708,218 @@ class ItemParser(BlizzardParser):
                 return inventory_type
 
 
-def find_glyph(glyph, version, player_class):
-    print(f"Trying to extract {glyph} from wowhead/{version}")
-    wowhead_url = f"https://www.wowhead.com/{version}/"
+class WowheadParser:
 
-    import re
+    def __init__(self, version: str):
+        self.game_version = version
+        match version:
+            case "mop":
+                self.wowhead_version = "mop-classic"
+            case _:
+                self.wowhead_version = version
+        self.url = f"https://www.wowhead.com/{self.wowhead_version}/"
 
-    response = requests.get(
-        f'{wowhead_url}search?q={glyph['name'].replace(" ", "+")}#glyphs'
-    )
+    def fetch_search(self, search, search_type: str | None = None):
+        existing_glyph = [
+            glyphs[_glyph][self.game_version]
+            for _glyph in glyphs
+            if glyphs[_glyph].get(self.game_version)
+            and (search in glyphs[_glyph][self.game_version].get("name"))
+        ]
+        if existing_glyph:
+            return existing_glyph
 
-    found = re.search(
-        r"WH\.SearchPage\.showTopResults\s*\(\s*(\[\s*[\s\S]*?\s*\])\s*\);",
-        response.text,
-    )
+        print(f"Trying to fetch '{search}' from wowhead/{self.wowhead_version}")
+        import re
 
-    if found:
-        array_text = found.group(1)
-        array_text = array_text.replace(r"\/", "/")
+        response = requests.get(f'{self.url}search?q={search.replace(" ", "+")}')
 
-        try:
-            data = json.loads(array_text)
-            for obj in data:
-                print(obj)
-                if (
-                    obj["type"] == 6
-                    and obj["lvjson"]["cat"] in [-13, 0]
-                    and obj["lvjson"]["name"] == glyph["name"]
-                    and obj["lvjson"].get("chrclass", class_enum[player_class])
-                    == class_enum[player_class]
-                ):
-                    if not glyph.get("id"):
-                        glyph["id"] = obj["lvjson"]["id"]
-                    if not glyphs.get(glyph["id"]):
-                        glyphs[glyph["id"]] = {}
-                    glyphs[glyph["id"]][version] = {
-                        "name": glyph["name"],
-                        "id": obj["typeId"],
-                        "icon": None,
-                        "type": None,
-                        "character_class": player_class,
-                    }
-                    response = requests.get(f'{wowhead_url}spell={obj["typeId"]}')
-                    found = re.search(r"Icon\.create\((.*?)\)", response.text)
-                    if found:
-                        icon_text = found.group(1)
-                        icon_text = (
-                            icon_text.replace(" ", "").replace('"', "").split(",")
-                        )
-                        icon_text = icon_text[0].replace("classic_", "")
-                        glyphs[glyph["id"]][version]["icon"] = icon_text
-                        break
+        found = re.search(
+            r"WH\.SearchPage\.showTopResults\s*\(\s*(\[\s*[\s\S]*?\s*\])\s*\);",
+            response.text,
+        )
 
-        except json.JSONDecodeError as e:
-            print("JSON parsing error:", e)
+        if found:
+            array_text = found.group(1)
+            array_text = array_text.replace(r"\/", "/")
 
-    found = re.search(
-        r"Glyph type: (\w+)",
-        response.text,
-    )
-    if found:
-        glyph_type = found.group(1)
-        glyphs[glyph["id"]][version]["type"] = glyph_type
+            try:
+                data = json.loads(array_text)
+                if search_type:
+                    search_id = -1
+                    match search_type:
+                        case "npc":
+                            search_id = 1
+                        case "item":
+                            search_id = 3
+                        case "spell" | "glyph":
+                            search_id = 6
+                        case _:
+                            search_id = 0
+                    filtered_data = [
+                        self.parse_result(element, search_type)
+                        for element in data
+                        if element.get("type") == search_id
+                    ]
+                    return filtered_data
+                return data
+            except json.JSONDecodeError as e:
+                print("JSON parsing error:", e)
+                return []
 
-    new_dict = dict(sorted(glyphs.items()))
-    with open("src/helper/glyphs.py", "w") as f:
-        f.write(f"glyphs = {str(new_dict)}")
+        return []
 
-    return glyphs[glyph["id"]][version] if glyph.get("id") else None
+    def parse_result(self, result, result_type):
+        match result_type:
+            case _:
+                return result
+
+
+class GlyphParser(WowheadParser):
+    def __init__(self, version, player_class):
+        super().__init__(version)
+        self.character_class = player_class
+
+    def fetch_glyph(self, glyph_id: str):
+        glyph = GlyphModel().model_dump()
+        glyph["id"] = int(glyph_id)
+        glyph["name"] = "Unknown"
+        glyph["character_class"] = self.character_class
+
+        response = requests.get(f"{self.url}spell={glyph_id}")
+
+        import re
+
+        found = re.findall(
+            r"WH\.Gatherer\.addData\(\d+,\s\d+,\s(.+)\);",
+            response.text,
+        )
+
+        if found:
+            found: list[dict] = [json.loads(element) for element in found]
+            for obj in found:
+                if obj.get(str(glyph_id)):
+                    glyph["name"] = obj[str(glyph_id)].get("name_enus", "Unknown")
+                    glyph["icon"] = (
+                        obj[str(glyph_id)]
+                        .get("icon", "Unknown")
+                        .replace("classic_", "")
+                    )
+                    break
+
+        found = re.search(
+            r"Glyph type: (\w+)",
+            response.text,
+        )
+        if found:
+            glyph_type = found.group(1)
+            glyph["type"] = glyph_type
+
+        return glyph
+
+    def find_glyph(self, glyph_id: str):
+        existing_glyph = [
+            glyphs[_glyph][self.game_version]
+            for _glyph in glyphs
+            if glyphs[_glyph].get(self.game_version)
+            and (glyphs[_glyph][self.game_version].get("id") == glyph_id)
+        ]
+        if existing_glyph:
+            return existing_glyph
+
+        glyph = self.fetch_glyph(glyph_id)
+        glyph["character_class"] = self.character_class
+
+        if not glyphs.get(glyph["id"]):
+            glyphs[glyph["id"]] = {}
+        glyphs[glyph["id"]][self.game_version] = glyph
+
+        new_dict = dict(sorted(glyphs.items()))
+        print(f"Writing glyph to file {glyph}")
+        with open("src/helper/glyphs.py", "w") as f:
+            f.write(f"glyphs = {str(new_dict)}")
+
+        return glyphs[glyph["id"]][self.game_version]
+
+    def get_class_name(self, class_name: str):
+        match class_name:
+            case "Deathknight":
+                return "death-knight"
+            case _:
+                return class_name.lower()
+
+    def get_glyph_type(self, glyph_type: int):
+        match glyph_type:
+            case 0:
+                return "Prime"
+            case 1:
+                return "Major"
+            case 2:
+                return "Minor"
+            case _:
+                return "Unknown"
+
+    def find_class_glyphs(self, class_name: str):
+        response = requests.get(
+            f"{self.url}/spells/glyphs/{self.get_class_name(class_name)}"
+        )
+
+        import re
+
+        glyph_icons = re.findall(
+            r"WH\.Gatherer\.addData\(\d+,\s\d+,\s(.+)\);",
+            response.text,
+        )
+        if glyph_icons:
+            glyph_icons: list[dict] = json.loads(glyph_icons[0])
+
+        found = re.findall(
+            r"var\slistviewspells\s\=\s(\[.*\])",
+            response.text,
+        )
+
+        result = []
+
+        if found:
+            found: list[dict] = json.loads(
+                found[0]
+                .replace("quality", '"quality"')
+                .replace("popularity", '"popularity"')
+            )
+            for item in found:
+                glyph = GlyphModel().model_dump()
+                glyph["id"] = item.get("id")
+                glyph["name"] = item.get("name", "Unknown")
+                glyph["icon"] = (
+                    glyph_icons.get(str(item["id"]), {})
+                    .get("icon", "")
+                    .replace("classic_", "")
+                )
+                glyph["type"] = self.get_glyph_type(item["glyphtype"])
+                glyph["character_class"] = class_name
+                if not glyphs.get(glyph["id"]):
+                    glyphs[glyph["id"]] = {}
+                glyphs[glyph["id"]][self.game_version] = glyph
+                result.append(glyph)
+
+        new_dict = dict(sorted(glyphs.items()))
+        print(f"Writing glyph to file {glyph}")
+        with open("src/helper/glyphs.py", "w") as f:
+            f.write(f"glyphs = {str(new_dict)}")
+
+        return result
+
+    def parse_result(self, result, result_type):
+        match result_type:
+            case "glyph":
+                return self.fetch_glyph(result["typeId"])
+            case _:
+                return self.parse_result(result, result_type)
 
 
 def save_talent(talent, version):
     print(f"Trying to extract {talent} from wowhead/{version}")
-    wowhead_url = f"https://www.wowhead.com/{version}/"
+    wowhead_parser = WowheadParser(version)
 
     import re
 
@@ -805,7 +932,7 @@ def save_talent(talent, version):
         "icon": None,
     }
 
-    response = requests.get(f'{wowhead_url}spell={talent["id"]}')
+    response = requests.get(f'{wowhead_parser.url}spell={talent["id"]}')
     found = re.search(r"Icon\.create\((.*?)\)", response.text)
     if found:
         icon_text = found.group(1)
@@ -850,15 +977,15 @@ def get_namespace(link: str):
 if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
-    test = CharacterParser(
-        "Feral",
-        "Everlook",
-        region="eu",
-        version="mop",
-    )
+    # test = CharacterParser(
+    #     "Feral",
+    #     "Everlook",
+    #     region="eu",
+    #     version="mop",
+    # )
     # print(test.get_character())
     # print(test.get_sorted_equipment())
-    print(test.get_talents(player_class="Druid"))
+    # print(test.get_talents(player_class="Druid"))
     # test2 = CharacterParser("Zoo", "nazgrim", namespace="classic", region="us")
     # print(test2.get_talents())
     # test3 = CharacterParser(
@@ -873,4 +1000,7 @@ if __name__ == "__main__":
     # print(test3.get_statistics())
     # test4 = ItemParser(region="eu", version="mop")
     # print(test4.get_item(76642))
-    # find_glyph({"name": "Glyph of Winged Vengeance"}, "mop", "Paladin")
+    # find_glyph(146959, "mop", "Paladin")
+    parser = WowheadParser("mop")
+    test = parser.fetch_search("Winged Vengeance", search_type="spell")
+    print(test)
