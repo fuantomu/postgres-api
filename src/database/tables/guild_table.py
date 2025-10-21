@@ -15,6 +15,7 @@ class GuildTable(Table):
         "created_timestamp": {"value": "BIGINT NOT NULL", "default": 0},
         "region": {"value": "varchar(2)", "default": "'eu'"},
         "version": {"value": "varchar(8)", "default": "'mop'"},
+        "realm_version": {"value": "varchar(32)"},
         "PRIMARY KEY": {"value": "(id,version)", "default": ""},
     }
 

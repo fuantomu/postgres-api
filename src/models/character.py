@@ -49,6 +49,7 @@ class CharacterModel(BaseModel):
     active_title: str | None = None
     region: Literal["eu", "us", "kr", "tw", "cn"] = "eu"
     version: str = "mop"
+    realm_version: Literal["classic", "vanilla", "fresh", "sod", "retail"] = "classic"
 
 
 class CharacterEquipmentModel(BaseModel):

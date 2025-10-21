@@ -34,6 +34,7 @@ class CharacterTable(Table):
         "last_login_timestamp": {"value": "BIGINT NOT NULL", "default": 0},
         "equipped_item_level": {"value": "SMALLINT NOT NULL", "default": 0},
         "active_title": {"value": "varchar(64)"},
+        "realm_version": {"value": "varchar(32)"},
         "PRIMARY KEY": {"value": "(id,version)", "default": ""},
     }
 
