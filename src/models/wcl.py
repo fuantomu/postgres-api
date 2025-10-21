@@ -5,12 +5,12 @@ from typing import Literal
 class AllStarsRanking(BaseModel):
     partition: int
     spec: str | None = None
-    points: float
+    points: float | str
     possiblePoints: int
-    rank: int
-    regionRank: int
-    serverRank: int
-    rankPercent: float | None = None
+    rank: int | str
+    regionRank: int | str
+    serverRank: int | str = None
+    rankPercent: float | None | str = None
     total: int
     rankTooltip: str | None = None
 
