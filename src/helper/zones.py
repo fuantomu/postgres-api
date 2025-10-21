@@ -1,0 +1,42 @@
+zones = {
+    1040: {
+        "brackets": {"min": 461, "max": 518, "bucket": 3, "type": "Item Level"},
+        "difficulties": [
+            {"id": 4, "name": "Heroic", "sizes": [25, 10]},
+            {"id": 3, "name": "Normal", "sizes": [25, 10]},
+        ],
+        "encounters": [
+            {"id": 1507, "name": "Imperial Vizier Zor'lok", "journalID": 0},
+            {"id": 1504, "name": "Blade Lord Ta'yak", "journalID": 0},
+            {"id": 1463, "name": "Garalon", "journalID": 0},
+            {"id": 1498, "name": "Wind Lord Mel'jarak", "journalID": 0},
+            {"id": 1499, "name": "Amber-Shaper Un'sok", "journalID": 0},
+            {"id": 1501, "name": "Grand Empress Shek'zeer", "journalID": 0},
+            {"id": 1409, "name": "Protectors of the Endless", "journalID": 0},
+            {"id": 1505, "name": "Tsulong", "journalID": 0},
+            {"id": 1506, "name": "Lei Shi", "journalID": 0},
+            {"id": 1431, "name": "Sha of Fear", "journalID": 0},
+        ],
+        "expansion": {"id": 1004, "name": "Mists of Pandaria"},
+        "frozen": False,
+        "name": "HoF / ToES",
+    },
+    1039: {
+        "brackets": {"min": 0, "max": 0, "bucket": 1, "type": "Patch"},
+        "difficulties": [{"id": 10, "name": "Dungeon", "sizes": [5]}],
+        "encounters": [
+            {"id": 10962, "name": "Gate of the Setting Sun", "journalID": 0},
+            {"id": 10994, "name": "Mogu'shan Palace", "journalID": 0},
+            {"id": 11001, "name": "Scarlet Halls", "journalID": 0},
+            {"id": 11004, "name": "Scarlet Monastery", "journalID": 0},
+            {"id": 11007, "name": "Scholomance", "journalID": 0},
+            {"id": 10959, "name": "Shado-Pan Monastery", "journalID": 0},
+            {"id": 11011, "name": "Siege of Niuzao Temple", "journalID": 0},
+            {"id": 10961, "name": "Stormstout Brewery", "journalID": 0},
+            {"id": 60960, "name": "Temple of the Jade Serpent", "journalID": 0},
+        ],
+        "expansion": {"id": 1004, "name": "Mists of Pandaria"},
+        "frozen": False,
+        "name": "Challenge Modes",
+    },
+}

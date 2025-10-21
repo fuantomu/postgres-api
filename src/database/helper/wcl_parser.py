@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import requests
 from os import getenv
+from src.helper.zones import zones
 
 
 class WCLParser:
@@ -48,6 +49,8 @@ class WCLParser:
             return result.json()["data"]["characterData"]["character"]
 
     def get_zone(self, zone: int):
+        if zones.get(int(zone)):
+            return zones[zone]
         body = self.get_schema("zone").replace("$ID", str(zone))
         result = requests.get(
             self.endpoint,
@@ -57,7 +60,11 @@ class WCLParser:
         if result.status_code != 200:
             raise Exception(result.text)
         else:
-            return result.json()["data"]["worldData"]["zone"]
+            zones[int(zone)] = result.json()["data"]["worldData"]["zone"]
+            print(f"Writing zone to file {zones[int(zone)]}")
+            with open("src/helper/zones.py", "w") as f:
+                f.write(f"zones = {str(zones)}")
+            return zones[zone]
 
 
 if __name__ == "__main__":
@@ -65,5 +72,5 @@ if __name__ == "__main__":
     load_dotenv(".env.local", override=True)
     test = WCLParser("classic")
     # out = test.get_character("heavenstamp", "everlook", "eu")
-    out = test.get_zone(1040)
+    out = test.get_zone(1039)
     print(out)
