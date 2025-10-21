@@ -979,15 +979,15 @@ def get_namespace(link: str):
 if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
-    test = CharacterParser(
-        "Feral",
-        "Everlook",
-        region="eu",
-        version="mop",
-    )
+    # test = CharacterParser(
+    #     "Feral",
+    #     "Everlook",
+    #     region="eu",
+    #     version="mop",
+    # )
     # print(test.get_character())
     # print(test.get_sorted_equipment())
-    print(test.get_talents(player_class="Druid"))
+    # print(test.get_talents(player_class="Druid"))
     # test2 = CharacterParser("Zoo", "nazgrim", namespace="classic", region="us")
     # print(test2.get_talents())
     # test3 = CharacterParser(

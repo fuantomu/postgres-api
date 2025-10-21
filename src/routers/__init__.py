@@ -3,6 +3,7 @@ from .character_router import Character
 from .item_router import Item
 from .glyph_router import Glyph
 from .enchantment_router import Enchantment
+from .ranking_router import Ranking
 
 
 __all__ = [
@@ -11,4 +12,5 @@ __all__ = [
     "item_router",
     "glyph_router",
     "enchantment_router",
+    "ranking_router",
 ]

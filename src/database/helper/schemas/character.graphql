@@ -1,0 +1,29 @@
+query{
+    characterData {
+        character(name:"$NAME", serverSlug:"$SERVER", serverRegion:"$REGION") {
+            name,
+            id,
+            classID,
+            gameData,
+            faction {
+                id,
+                name,
+            }
+            level,
+            hidden,
+            guilds{
+                id,
+                name,
+                server {
+                    slug,
+                    name,
+                    region {
+                        slug,
+                    }
+                }
+            }
+            guildRank,
+            zoneRankings
+        }
+    }
+}

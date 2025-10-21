@@ -4,6 +4,7 @@ from src.models.character import (
     CharacterEquipmentModel,
     CharacterModel,
     CharacterStatisticModel,
+    RankingModel,
 )
 from src.models.guild import GuildModel
 from src.models.item import EnchantmentModel, ItemModel
@@ -44,3 +45,7 @@ class GlyphResponseModel(BaseModel):
 
 class EnchantmentResponseModel(BaseModel):
     Result: List[EnchantmentModel]
+
+
+class RankingResponseModel(BaseModel):
+    Result: RankingModel
