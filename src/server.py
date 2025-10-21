@@ -50,7 +50,7 @@ class Server:
         self.routers["Item"] = routers.Item()
         self.routers["Glyph"] = routers.Glyph()
         self.routers["Enchantment"] = routers.Enchantment()
-        self.routers["Ranking"] = routers.Ranking()
+        self.routers["Warcraftlogs"] = routers.Warcraftlogs()
 
         for key, value in self.routers.items():
             self.app.include_router(value.router, prefix=f"/{key}", tags=[key])

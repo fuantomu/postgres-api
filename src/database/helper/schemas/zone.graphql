@@ -1,0 +1,28 @@
+query{
+    worldData {
+        zone(id:$ID) {
+            brackets {
+                min,
+                max,
+                bucket,
+                type,
+            }
+            difficulties {
+                id,
+                name,
+                sizes
+            },
+            encounters {
+                id,
+                name,
+                journalID,
+            }
+            expansion {
+                id,
+                name,
+            }
+            frozen,
+            name
+        }
+    }
+}

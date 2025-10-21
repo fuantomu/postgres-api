@@ -47,10 +47,23 @@ class WCLParser:
         else:
             return result.json()["data"]["characterData"]["character"]
 
+    def get_zone(self, zone: int):
+        body = self.get_schema("zone").replace("$ID", str(zone))
+        result = requests.get(
+            self.endpoint,
+            json={"query": body},
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        if result.status_code != 200:
+            raise Exception(result.text)
+        else:
+            return result.json()["data"]["worldData"]["zone"]
+
 
 if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
     test = WCLParser("classic")
-    out = test.get_character("mimei", "everlook", "eu")
+    # out = test.get_character("heavenstamp", "everlook", "eu")
+    out = test.get_zone(1040)
     print(out)

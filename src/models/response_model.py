@@ -4,11 +4,11 @@ from src.models.character import (
     CharacterEquipmentModel,
     CharacterModel,
     CharacterStatisticModel,
-    RankingModel,
 )
 from src.models.guild import GuildModel
 from src.models.item import EnchantmentModel, ItemModel
 from src.models.specialization import GlyphModel, SpecializationModel
+from src.models.wcl import RankingModel, ZoneModel
 
 
 class BaseResponseModel(BaseModel):
@@ -49,3 +49,7 @@ class EnchantmentResponseModel(BaseModel):
 
 class RankingResponseModel(BaseModel):
     Result: RankingModel
+
+
+class ZoneResponseModel(BaseModel):
+    Result: ZoneModel
