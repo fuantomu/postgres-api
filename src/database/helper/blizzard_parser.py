@@ -548,6 +548,10 @@ class ItemParser(BlizzardParser):
 
                 if any(
                     enchant["enchantment_slot"]["id"] in [0, 7, 8, 9]
+                    or (
+                        enchant["enchantment_slot"]["id"] == 1
+                        and self.version == "classic"
+                    )
                     for enchant in item["enchantments"]
                 ):
                     item["link"] += "&ench="
@@ -582,7 +586,13 @@ class ItemParser(BlizzardParser):
                     and any(
                         enchantments[enchant][self.version]["id"]
                         == item_enchant["enchantment_id"]
-                        and item_enchant["enchantment_slot"]["id"] in [0, 7, 8, 9]
+                        and (
+                            item_enchant["enchantment_slot"]["id"] in [0, 7, 8, 9]
+                            or (
+                                item_enchant["enchantment_slot"]["id"] == 1
+                                and self.version == "classic"
+                            )
+                        )
                         for item_enchant in item["enchantments"]
                     )
                 ]
@@ -991,8 +1001,8 @@ if __name__ == "__main__":
     # test2 = CharacterParser("Zoo", "nazgrim", namespace="classic", region="us")
     # print(test2.get_talents())
     # test3 = CharacterParser(
-    #     "Boj",
-    #     "Dreamscythe",
+    #     "Xippm",
+    #     "Crusader Strike",
     #     region="us",
     #     version="classic",
     # )
