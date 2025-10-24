@@ -561,6 +561,15 @@ class ItemParser(BlizzardParser):
             base_item["slot"] = " ".join(
                 [_slot.capitalize() for _slot in slot.split("_")]
             )
+            if (
+                item["slot"]["name"]
+                not in ItemModel.model_json_schema()["properties"]["slot"]["enum"]
+            ):
+                base_item["slot"] = " ".join(
+                    [elem.capitalize() for elem in item["slot"]["name"].split("_")]
+                )
+            else:
+                base_item["slot"] = item["slot"]["name"]
             base_item["quality"] = item["data"]["quality"]["name"]["en_GB"]
             base_item["version"] = self.version
             if item["data"]["item_class"]["id"] == 3:
