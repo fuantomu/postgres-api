@@ -26,7 +26,8 @@ class ItemModel(BaseModel):
         "Main Hand",
         "Off Hand",
         "Ranged",
-    ] = "Head"
+        "Item",
+    ] = "Item"
     quality: Literal[
         "Poor",
         "Common",

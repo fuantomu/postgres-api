@@ -1,5 +1,6 @@
-import json
+from itertools import islice
 from src.database.helper.blizzard_parser import ItemParser
+from src.helper.item_search import item_search
 from src.models.response_model import BaseResponseModel, ItemResponseModel
 from src.routers.base_router import Router
 
@@ -11,16 +12,44 @@ class Item(Router):
 
     def get(
         self,
+        version: str,
+        search: str = None,
         id: str = None,
-        region: str = None,
-        version: str = None,
+        slot: str = None,
+        limit: int = 100,
     ) -> ItemResponseModel | BaseResponseModel:
         if version:
             version = version.lower()
-        if region:
-            region = region.lower()
-        item_parser = ItemParser(
-            region=region if region else "eu", version=version if version else "mop"
+        self.logger.info(f"Received GET request on {self.name}")
+        self.logger.debug(
+            f"search: {search}, id: {id}, version: {version}, limit: {limit}"
         )
-        item = item_parser.get_item(id)
-        return self.return_result(json.dumps(item))
+
+        result = []
+
+        if id:
+            result = [
+                item_search[__item][version]
+                for __item in item_search
+                if item_search[__item].get(version)
+                and (
+                    (search and search in item_search[__item][version].get("name"))
+                    or id == item_search[__item][version].get("id")
+                )
+            ]
+        elif (id or search) and slot:
+            item_parser = ItemParser(version=version)
+            result = item_parser.fetch_search(search=search, id=id, slot=slot)
+        else:
+            result = [
+                item_search[item][version]
+                for item in dict(
+                    islice(
+                        item_search.items(),
+                        len(item_search.keys()) if limit == -1 else limit,
+                    )
+                )
+                if item_search[item].get(version, {})
+                and (item_search[item].get("slot") == slot if slot else 1)
+            ]
+        return self.return_result(result)

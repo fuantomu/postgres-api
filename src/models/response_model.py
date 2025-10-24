@@ -36,7 +36,7 @@ class GuildResponseModel(BaseModel):
 
 
 class ItemResponseModel(BaseModel):
-    Result: ItemModel
+    Result: List[ItemModel]
 
 
 class GlyphResponseModel(BaseModel):

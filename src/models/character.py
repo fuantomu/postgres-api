@@ -72,6 +72,7 @@ class CharacterEquipmentModel(BaseModel):
     off_hand: ItemModel | None = None
     ranged: ItemModel | None = None
     tabard: ItemModel | None = None
+    item: ItemModel | None = None
 
 
 class RatingModel(BaseModel):

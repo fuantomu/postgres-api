@@ -12,9 +12,9 @@ class Glyph(Router):
 
     def get(
         self,
+        version: str,
         name: str = None,
         id: str = None,
-        version: str = None,
         class_name: str = None,
         type: str = None,
         limit: int = 100,

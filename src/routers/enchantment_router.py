@@ -1,3 +1,4 @@
+from src.database.helper.blizzard_parser import EnchantmentParser
 from src.models.response_model import BaseResponseModel, EnchantmentResponseModel
 from src.routers.base_router import Router
 from src.helper.enchantments import enchantments
@@ -10,8 +11,17 @@ class Enchantment(Router):
         super().__init__()
 
     def get(
-        self, id: str = None, version: str = None, slot: str = None, limit: int = 100
+        self,
+        version: str,
+        id: str = None,
+        search: str = None,
+        slot: str = None,
+        limit: int = 100,
     ) -> EnchantmentResponseModel | BaseResponseModel:
+        self.logger.info(f"Received GET request on {self.name}")
+        self.logger.debug(
+            f"id: {id}, search: {search}, slot: {slot}, version: {version}, limit: {limit}"
+        )
         if version:
             version = version.lower()
         if slot:
@@ -28,19 +38,16 @@ class Enchantment(Router):
                     )
                 )
                 if enchantments[enchantment].get(version, {}).get("id", -1) == int(id)
+                or enchantments[enchantment].get(version, {}).get("source_id", -1)
+                == int(id)
             ]
-        elif slot:
-            result = [
-                enchantments[enchantment][version]
-                for enchantment in dict(
-                    islice(
-                        enchantments.items(),
-                        len(enchantments.keys()) if limit == -1 else limit,
-                    )
-                )
-                if slot
-                in enchantments[enchantment].get(version, {}).get("slot", "").lower()
-            ]
+        elif (id or search) and slot:
+            if slot == "gem":
+                enchantment_parser = EnchantmentParser(version=version)
+                result = enchantment_parser.fetch_gem(search=search, id=id)
+            elif slot == "enchant":
+                enchantment_parser = EnchantmentParser(version=version)
+                result = enchantment_parser.fetch_enchant(search=search, id=id)
         else:
             result = [
                 enchantments[enchantment][version]

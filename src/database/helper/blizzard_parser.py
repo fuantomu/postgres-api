@@ -10,12 +10,13 @@ from src.models.character import (
 )
 from src.models.guild import GuildModel
 from src.models.icon import IconModel
-from src.models.item import ItemModel
+from src.models.item import EnchantmentModel, ItemModel
 from src.models.specialization import GlyphModel, SpecializationModel
 from src.helper.glyphs import glyphs
 from src.helper.talents import talents
 from src.helper.enchantments import enchantments
-from src.helper.items import items
+from src.helper.item_search import item_search
+from src.helper.icons import icons
 
 slotNames = {
     "head": 0,
@@ -37,6 +38,7 @@ slotNames = {
     "off_hand": 16,
     "ranged": 17,
     "tabard": 18,
+    "item": -1,
 }
 
 affixStats = {
@@ -53,7 +55,7 @@ affixStats = {
     4059: "MASTERY_RATING",
     4060: "PARRY_RATING",
 }
-ignore_enchant = [3, 18]
+ignore_enchant = [-1, 3, 18]
 
 class_enum = {
     "Warrior": 1,
@@ -69,6 +71,8 @@ class_enum = {
     "Druid": 1024,
 }
 
+SEARCH_LIMIT = 10
+
 
 class BlizzardParser:
     def __init__(
@@ -80,6 +84,7 @@ class BlizzardParser:
     ):
         self.headers = {"Authorization": None}
         self.base_url = "https://eu.api.blizzard.com/"
+        self.base_search_url = "https://eu.api.blizzard.com/data/wow/search/"
         if not namespace:
             match version.lower():
                 case "classic" | "tbc" | "cata" | "wotlk":
@@ -203,7 +208,11 @@ class CharacterParser(BlizzardParser):
         sortedEquipment = CharacterEquipmentModel().model_dump()
         items = equipment["equipped_items"]
 
-        item_parser = ItemParser(self.namespace, self.region, self.version)
+        item_parser = ItemParser(
+            "1.15.8_63631-classic1x" if self.version == "mop" else self.namespace,
+            self.region,
+            self.version,
+        )
         for item in items:
             sortedEquipment[item["slot"]["name"].lower().replace(" ", "_")] = (
                 item_parser.parse_item(item)
@@ -459,11 +468,18 @@ class IconParser(BlizzardParser):
         )
 
     def get_icon(self):
+        existing_icon = [
+            icons[_icon][self.version]
+            for _icon in icons
+            if icons.get(_icon, {}).get(self.version)
+            and (int(self.id) in icons[_icon][self.version])
+        ]
+        if existing_icon:
+            return existing_icon
         icon = requests.get(
             self.get_base_url(),
             headers=self.headers,
         ).json()
-
         icon_template = IconModel().model_dump()
         icon_template["id"] = icon["id"]
         try:
@@ -475,6 +491,14 @@ class IconParser(BlizzardParser):
         except KeyError:
             icon_template["icon"] = None
 
+        if not icons.get(icon["id"]):
+            icons[icon["id"]] = {}
+
+        icons[icon["id"]][self.version] = icon_template.copy()
+        new_dict = dict(sorted(icons.items()))
+        with open("src/helper/icons.py", "w") as f:
+            f.write(f"icons = {str(new_dict)}")
+
         return icon_template
 
 
@@ -482,6 +506,7 @@ class ItemParser(BlizzardParser):
     def __init__(self, namespace=None, region="eu", version="mop", token=None):
         super().__init__(namespace, region, version, token)
         self.base_url = "https://REGION.api.blizzard.com/data/wow/item/ITEMID?namespace=static-NAMESPACE-REGION&locale=en_GB&access_token="
+        self.base_search_url = "https://REGION.api.blizzard.com/data/wow/search/item?namespace=static-NAMESPACE-REGION&name.en_GB=SEARCH&orderby=id:desc&_page=1&inventory_type.type=ITEMTYPE&access_token="
 
     def get_base_url(self, url_type=""):
         return (
@@ -491,48 +516,78 @@ class ItemParser(BlizzardParser):
             .replace("REGION", self.region.lower())
         )
 
-    def get_item(self, id: int):
-        if items.get(id, {}).get(self.version):
-            if items[id][self.version]["slot"]["name"] == "item":
-                return items[id][self.version]
-            return self.parse_item(items[id][self.version])
-        item: dict = requests.get(
-            self.get_base_url().replace("ITEMID", str(id)),
-            headers=self.headers,
-        ).json()
+    def get_base_search_url(self):
+        return self.base_search_url.replace(
+            "NAMESPACE", self.namespace.lower()
+        ).replace("REGION", self.region.lower())
+
+    def fetch_search(self, search=None, id=None, slot=None):
+        if search:
+            print(
+                f"Trying to fetch '{search}' from blizzard api/{self.get_base_search_url().replace('SEARCH', str(search)).replace('ITEMTYPE', self.get_slot_identifier(slot))}"
+            )
+            item: dict = requests.get(
+                self.get_base_search_url()
+                .replace("SEARCH", str(search))
+                .replace("ITEMTYPE", self.get_slot_identifier(slot)),
+                headers=self.headers,
+            ).json()
+        elif id:
+            print(
+                f"Trying to fetch '{id}' from blizzard api/{self.get_base_url().replace('ITEMID', str(id))}"
+            )
+            item: dict = requests.get(
+                self.get_base_url().replace("ITEMID", str(id)),
+                headers=self.headers,
+            ).json()
+            item["slot"] = {"name": self.match_slot(item["inventory_type"]["name"])}
+            item["item"] = item["preview_item"]["item"]
         if item.get("code") == 404:
             return "Error 404"
-        item["slot"] = {
-            "name": self.match_slot(
-                item["inventory_type"]["name"].replace("-", "_").lower()
+        return self.parse_search(item["results"]) if search else [self.parse_item(item)]
+
+    def parse_search(self, result: list[dict]):
+        out = []
+        for item in result[:SEARCH_LIMIT]:
+            if item_search.get(item["data"]["id"], {}).get(self.version):
+                out.append(item_search[item["data"]["id"]][self.version])
+                continue
+
+            base_item = ItemModel().model_dump()
+            base_item["character_id"] = -1
+            base_item["id"] = item["data"]["id"]
+            base_item["name"] = item["data"]["name"]["en_GB"]
+            slot = self.match_slot(item["data"]["inventory_type"]["name"]["en_GB"])
+            base_item["slot"] = " ".join(
+                [_slot.capitalize() for _slot in slot.split("_")]
             )
-        }
-
-        item["item"] = item["preview_item"]["item"]
-
-        if not items.get(item["id"]):
-            items[item["id"]] = {}
-
-        items[item["id"]][self.version] = item.copy()
-        new_dict = dict(sorted(items.items()))
-        with open("src/helper/items.py", "w") as f:
-            f.write(f"items = {str(new_dict)}")
-
-        if item["slot"]["name"] == "item":
-            iconparser = IconParser(
-                item["item"]["id"],
-                "item",
-                namespace=get_namespace(item["item"]["key"]["href"]) or self.namespace,
+            base_item["quality"] = item["data"]["quality"]["name"]["en_GB"]
+            base_item["version"] = self.version
+            if item["data"]["item_class"]["id"] == 3:
+                base_item["inventory_type"] = "Gem"
+            elif item["data"]["item_subclass"]["id"] == 6:
+                base_item["inventory_type"] = "Enchant"
+            else:
+                base_item["inventory_type"] = item["data"]["inventory_type"]["name"][
+                    "en_GB"
+                ]
+            icon_parser = IconParser(
+                item["data"]["id"], "item", namespace=get_namespace(item["key"]["href"])
             )
-            icon = iconparser.get_icon()
-            return {
-                "name": item["name"],
-                "id": item["id"],
-                "icon": icon["icon"],
-                "quality": item["quality"]["name"],
-                "inventory_type": item["inventory_type"]["name"],
-            }
-        return self.parse_item(item)
+            base_item["icon"] = icon_parser.get_icon().get("icon")
+            out.append(base_item)
+
+            if not item_search.get(base_item["id"]):
+                item_search[base_item["id"]] = {}
+
+            item_search[base_item["id"]][self.version] = base_item
+
+        print("Writing search to file")
+        new_dict = dict(sorted(item_search.items()))
+        with open("src/helper/item_search.py", "w") as f:
+            f.write(f"item_search = {str(new_dict)}")
+
+        return out
 
     def parse_item(
         self,
@@ -559,22 +614,20 @@ class ItemParser(BlizzardParser):
                 for enchant in item["enchantments"]:
                     if enchant["enchantment_slot"]["id"] == 5:
                         continue
+                    elif enchant["enchantment_slot"]["id"] == 7:
+                        key = None
+                        try:
+                            key = enchant.get("spell", {}).get("spell", {}).get("id")
+                        except Exception:
+                            key = enchant.get("spell", {}).get("id")
+                    else:
+                        if not enchant.get("source_item", {}).get("id"):
+                            key = enchant.get("enchantment_id")
+                        else:
+                            key = enchant.get("source_item")["id"]
                     if (
-                        not enchantments.get(enchant["enchantment_id"])
-                        or self.version
-                        not in enchantments[enchant["enchantment_id"]].keys()
-                        or enchantments[enchant["enchantment_id"]]
-                        .get(self.version, {})
-                        .get("slot", -1)
-                        == -1
-                        or enchantments[enchant["enchantment_id"]]
-                        .get(self.version, {})
-                        .get("type", -1)
-                        == -1
-                        or enchantments[enchant["enchantment_id"]]
-                        .get(self.version, {})
-                        .get("source_id", -1)
-                        == -1
+                        not enchantments.get(key)
+                        or self.version not in enchantments[key].keys()
                     ):
                         print(f"Enchant {enchant} is missing")
                         save_enchant(enchant, self.version, slot_name)
@@ -688,7 +741,16 @@ class ItemParser(BlizzardParser):
         item_model = ItemModel().model_dump()
         item_model["id"] = item["item"]["id"]
         item_model["name"] = item["name"]
-        item_model["slot"] = item["slot"]["name"]
+        if (
+            item["slot"]["name"]
+            not in ItemModel.model_json_schema()["properties"]["slot"]["enum"]
+        ):
+            item_model["slot"] = " ".join(
+                [elem.capitalize() for elem in item["slot"]["name"].split("_")]
+            )
+        else:
+            item_model["slot"] = item["slot"]["name"]
+
         item_model["quality"] = item["quality"]["name"]
         item_model["wowhead_link"] = item["link"]
         item_model["icon"] = icon["icon"]
@@ -702,8 +764,8 @@ class ItemParser(BlizzardParser):
 
         return item_model
 
-    def match_slot(self, inventory_type):
-        match inventory_type:
+    def match_slot(self, inventory_type: str):
+        match inventory_type.lower().replace("-", "_"):
             case "two_hand" | "one_hand":
                 return "main_hand"
             case "off hand":
@@ -719,6 +781,32 @@ class ItemParser(BlizzardParser):
             case _:
                 return inventory_type
 
+    def get_slot_identifier(self, inventory_slot: str):
+        match inventory_slot:
+            case "main_hand":
+                if self.version in ["mop", "wod"]:
+                    return "WEAPON||TWOHWEAPON||WEAPONMAINHAND||RANGEDRIGHT||RANGED"
+                else:
+                    return "WEAPON||TWOHWEAPON||WEAPONMAINHAND"
+            case "shoulders":
+                return "SHOULDER"
+            case "back":
+                return "CLOAK"
+            case "shirt":
+                return "BODY"
+            case "hands":
+                return "HAND"
+            case "ring_1" | "ring_2":
+                return "FINGER"
+            case "trinket_1" | "trinket_1":
+                return "TRINKET"
+            case "off_hand":
+                return "SHIELD||HOLDABLE||WEAPONOFFHAND"
+            case "ranged":
+                return "RANGEDRIGHT||RANGED"
+            case _:
+                return inventory_slot.upper()
+
 
 class WowheadParser:
 
@@ -731,11 +819,18 @@ class WowheadParser:
                 self.wowhead_version = version
         self.url = f"https://www.wowhead.com/{self.wowhead_version}/"
 
+    def fetch_id(self, id, search_type: str):
+        print(
+            f"Trying to fetch '{id}' from wowhead/{self.wowhead_version}/{search_type}"
+        )
+        response = requests.get(f"{self.url}/{search_type}={id}")
+        return response
+
     def fetch_search(self, search, search_type: str | None = None):
         existing_glyph = [
             glyphs[_glyph][self.game_version]
             for _glyph in glyphs
-            if glyphs[_glyph].get(self.game_version)
+            if glyphs.get(_glyph, {}).get(self.game_version)
             and (search in glyphs[_glyph][self.game_version].get("name"))
         ]
         if existing_glyph:
@@ -900,7 +995,7 @@ class GlyphParser(WowheadParser):
             )
             for item in found:
                 glyph = GlyphModel().model_dump()
-                glyph["id"] = item.get("id")
+                glyph["id"] = int(item.get("id"))
                 glyph["name"] = item.get("name", "Unknown")
                 glyph["icon"] = (
                     glyph_icons.get(str(item["id"]), {})
@@ -927,6 +1022,199 @@ class GlyphParser(WowheadParser):
                 return self.fetch_glyph(result["typeId"])
             case _:
                 return self.parse_result(result, result_type)
+
+
+class EnchantmentParser(BlizzardParser):
+    def __init__(self, namespace=None, region="eu", version="mop", token=None):
+        super().__init__(namespace, region, version, token)
+        self.base_url = "https://REGION.api.blizzard.com/data/wow/item/ITEMID?namespace=static-NAMESPACE-REGION&locale=en_GB&access_token="
+        self.base_search_url = "https://REGION.api.blizzard.com/data/wow/search/item?namespace=static-NAMESPACE-REGION&name.en_GB=SEARCH&orderby=id:desc&_page=1&item_class.id=ITEMCLASS&access_token="
+
+    def get_base_url(self, url_type=""):
+        return (
+            super()
+            .get_base_url(url_type)
+            .replace("NAMESPACE", self.namespace.lower())
+            .replace("REGION", self.region.lower())
+        )
+
+    def get_base_search_url(self):
+        return self.base_search_url.replace(
+            "NAMESPACE", self.namespace.lower()
+        ).replace("REGION", self.region.lower())
+
+    def fetch_gem(self, search=None, id=None):
+        if search:
+            print(
+                f"Trying to fetch gem '{search}' from blizzard api/{self.get_base_search_url().replace('SEARCH', str(search)).replace('ITEMCLASS', "3")}"
+            )
+            gem: dict = requests.get(
+                self.get_base_search_url()
+                .replace("SEARCH", str(search))
+                .replace("ITEMCLASS", "3"),
+                headers=self.headers,
+            ).json()
+        elif id:
+            print(
+                f"Trying to fetch gem '{id}' from blizzard api/{self.get_base_url().replace('ITEMID', str(id))}"
+            )
+            gem: dict = requests.get(
+                self.get_base_url().replace("ITEMID", str(id)),
+                headers=self.headers,
+            ).json()
+        if gem.get("code") == 404:
+            return "Error 404"
+        return self.parse_search(gem["results"]) if search else [self.parse_gem(gem)]
+
+    def fetch_enchant(self, search=None, id=None):
+        print("fetch enchant")
+        if search:
+            print(
+                f"Trying to fetch enchant '{search}' from blizzard api/{self.get_base_search_url().replace('SEARCH', str(search)).replace('ITEMCLASS', "0")}"
+            )
+            enchant: dict = requests.get(
+                self.get_base_search_url()
+                .replace("SEARCH", str(search))
+                .replace("ITEMCLASS", "0"),
+                headers=self.headers,
+            ).json()
+        elif id:
+            print(
+                f"Trying to fetch enchant '{id}' from blizzard api/{self.get_base_url().replace('ITEMID', str(id))}"
+            )
+            enchant: dict = requests.get(
+                self.get_base_url().replace("ITEMID", str(id)),
+                headers=self.headers,
+            ).json()
+        if enchant.get("code") == 404:
+            return "Error 404"
+        return (
+            self.parse_search(enchant["results"], search_type="Enchant")
+            if search
+            else [self.parse_enchant(enchant)]
+        )
+
+    def parse_search(self, result: list[dict], search_type="Gem"):
+        item_parser = ItemParser(self.namespace, self.region, self.version)
+        wowhead_parser = WowheadParser(self.version)
+        out = []
+        import re
+
+        for enchantment in item_parser.parse_search(result):
+            if enchantments.get(enchantment["id"], {}).get(self.version):
+                out.append(enchantments[enchantment["id"]][self.version])
+                continue
+            if search_type == "Enchant" and "Enchant" not in enchantment.get(
+                "name", ""
+            ):
+                continue
+            if not enchantments.get(enchantment["id"]):
+                enchantments[enchantment["id"]] = {}
+
+            temp_enchantment: EnchantmentModel = EnchantmentModel().model_dump()
+            temp_enchantment["id"] = int(enchantment["id"])
+            temp_enchantment["name"] = enchantment.get("name")
+            temp_enchantment["source_id"] = enchantment["id"]
+            temp_enchantment["type"] = 2
+            temp_enchantment["slot"] = "Other"
+
+            response = wowhead_parser.fetch_id(enchantment["id"], "item")
+            if search_type == "Gem":
+                found = re.findall(
+                    r"\+<!--gem\d+-->\s*(\d+)\s*<!---->\s*([A-Za-z\s'-]+)(?:\s*and\s*\+<!--gem\d+-->\s*(\d+)\s*<!---->\s*([A-Za-z\s'-]+))?",
+                    response.text,
+                )
+
+                if len(found) > 1:
+                    boni = [item.strip() for item in list(found[0]) if item != ""]
+                    boni.extend([item.strip() for item in list(found[1]) if item != ""])
+                    temp_enchantment["display_string"] = f'+{" ".join(boni)}'
+            elif search_type == "Enchant":
+                found = re.search(
+                    rf'<a href="\/{wowhead_parser.wowhead_version}\/spell=(\d+)\/enchant-',
+                    response.text,
+                )
+                if found:
+                    response = wowhead_parser.fetch_id(found.group(1), "spell")
+                    found = re.search(
+                        r'<span class="q2">[^<]+</span>\s*&nbsp;\((\d+)\)',
+                        response.text,
+                    )
+                    if found:
+                        temp_enchantment["id"] = found.group(1)
+
+            out.append(temp_enchantment)
+            enchantments[enchantment["id"]][self.version] = temp_enchantment
+
+        new_dict = dict(sorted(enchantments.items()))
+        with open("src/helper/enchantments.py", "w") as f:
+            f.write(f"enchantments = {str(new_dict)}")
+        return out
+
+    def parse_enchant(self, enchant: dict):
+        temp_enchant: EnchantmentModel = EnchantmentModel().model_dump()
+        temp_enchant["name"] = enchant.get("name")
+        temp_enchant["source_id"] = enchant["id"]
+        temp_enchant["type"] = 2
+        temp_enchant["slot"] = "Other"
+
+        wowhead_parser = WowheadParser(self.version)
+        response = wowhead_parser.fetch_id(enchant["id"], "item")
+
+        import re
+
+        found = re.search(
+            rf'<a href="\/{wowhead_parser.wowhead_version}\/spell=(\d+)\/enchant-',
+            response.text,
+        )
+        if found:
+            response = wowhead_parser.fetch_id(found.group(1), "spell")
+            found = re.search(
+                r'<span class="q2">[^<]+</span>\s*&nbsp;\((\d+)\)',
+                response.text,
+            )
+            if found:
+                temp_enchant["id"] = int(found.group(1))
+        if not enchantments.get(enchant["id"]):
+            enchantments[enchant["id"]] = {}
+        enchantments[enchant["id"]][self.version] = temp_enchant
+
+        new_dict = dict(sorted(enchantments.items()))
+        with open("src/helper/enchantments.py", "w") as f:
+            f.write(f"enchantments = {str(new_dict)}")
+        return temp_enchant
+
+    def parse_gem(self, gem: dict):
+        if not enchantments.get(gem["id"]):
+            enchantments[gem["id"]] = {}
+        temp_gem: EnchantmentModel = EnchantmentModel().model_dump()
+        temp_gem["id"] = int(gem["id"])
+        temp_gem["name"] = gem.get("name")
+        temp_gem["source_id"] = gem["id"]
+        temp_gem["type"] = 2
+        temp_gem["slot"] = "Other"
+
+        wowhead_parser = WowheadParser(self.version)
+        response = wowhead_parser.fetch_id(gem["id"], "item")
+
+        import re
+
+        found = re.findall(
+            r"\+<!--gem\d+-->\s*(\d+)\s*<!---->\s*([A-Za-z\s'-]+)(?:\s*and\s*\+<!--gem\d+-->\s*(\d+)\s*<!---->\s*([A-Za-z\s'-]+))?",
+            response.text,
+        )
+
+        if len(found) > 1:
+            boni = [item.strip() for item in list(found[0]) if item != ""]
+            boni.extend([item.strip() for item in list(found[1]) if item != ""])
+            temp_gem["display_string"] = f'+{" ".join(boni)}'
+
+        enchantments[gem["id"]][self.version] = temp_gem
+
+        new_dict = dict(sorted(enchantments.items()))
+        with open("src/helper/enchantments.py", "w") as f:
+            f.write(f"enchantments = {str(new_dict)}")
+        return temp_gem
 
 
 def save_talent(talent, version):
@@ -957,12 +1245,27 @@ def save_talent(talent, version):
 
 
 def save_enchant(enchant, version: str, slot: str):
-    if not enchantments.get(enchant["enchantment_id"]):
-        enchantments[enchant["enchantment_id"]] = {}
-    enchantments[enchant["enchantment_id"]][version] = {
-        "id": enchant["enchantment_id"],
+    if enchant.get("enchantment_slot", {}).get("id") == 7:
+        try:
+            key = enchant["spell"]["spell"]["id"]
+        except Exception:
+            key = enchant["spell"]["id"]
+    else:
+        try:
+            key = enchant["source_item"]["id"]
+        except Exception:
+            key = enchant["enchantment_id"]
+    if not enchantments.get(key):
+        enchantments[key] = {}
+    enchantments[key][version] = {
+        "id": int(enchant["enchantment_id"]),
         "name": enchant.get("source_item", {})
-        .get("name", enchant.get("spell", {}).get("name", "Unknown"))
+        .get(
+            "name",
+            enchant.get("spell", {}).get(
+                "name", enchant.get("spell", {}).get("spell", {}).get("name", "Unknown")
+            ),
+        )
         .replace("QA", ""),
         "display_string": enchant.get(
             "display_string", enchant.get("source_item", {}).get("name", "Unknown")
@@ -990,7 +1293,7 @@ if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
     # test = CharacterParser(
-    #     "Feral",
+    #     "Heavenstamp",
     #     "Everlook",
     #     region="eu",
     #     version="mop",
@@ -1000,19 +1303,24 @@ if __name__ == "__main__":
     # print(test.get_talents(player_class="Druid"))
     # test2 = CharacterParser("Zoo", "nazgrim", namespace="classic", region="us")
     # print(test2.get_talents())
-    # test3 = CharacterParser(
-    #     "Xippm",
-    #     "Crusader Strike",
-    #     region="us",
-    #     version="classic",
-    # )
+    test3 = CharacterParser(
+        "Xippm",
+        "Crusader Strike",
+        region="us",
+        version="classic",
+    )
     # print(test3.get_character())
-    # print(test3.get_sorted_equipment())
+    print(test3.get_sorted_equipment())
     # print(test3.get_talents())
     # print(test3.get_statistics())
     # test4 = ItemParser(region="eu", version="mop")
     # print(test4.get_item(76642))
     # find_glyph(146959, "mop", "Paladin")
-    # parser = WowheadParser("mop")
-    # test = parser.fetch_search("Winged Vengeance", search_type="spell")
-    # print(test)
+    # test5 = ItemParser(version="mop")
+    # out = test5.fetch_search("Thunderfury")
+    # print(out)
+    # test6 = EnchantmentParser(version="mop")
+    # out = test6.fetch_gem(search="Tiger Opal")
+    # print(out)
+    # out2 = test6.fetch_enchant(search="dancing steel")
+    # print(out2)
