@@ -38,12 +38,12 @@ class Item(Router):
                 )
             ]
         elif (id or search) and slot:
-            if version == "mop":
-                ItemParser(version=version)
-            else:
+            if version == "classic":
                 item_parser = ItemParser(
                     namespace="1.15.8_63631-classic1x", version=version
                 )
+            else:
+                ItemParser(version=version)
             result = item_parser.fetch_search(search=search, id=id, slot=slot)
         else:
             result = [

@@ -552,7 +552,6 @@ class ItemParser(BlizzardParser):
             if item_search.get(item["data"]["id"], {}).get(self.version):
                 out.append(item_search[item["data"]["id"]][self.version])
                 continue
-
             base_item = ItemModel().model_dump()
             base_item["character_id"] = -1
             base_item["id"] = item["data"]["id"]
@@ -561,16 +560,19 @@ class ItemParser(BlizzardParser):
             base_item["slot"] = " ".join(
                 [_slot.capitalize() for _slot in slot.split("_")]
             )
-            if (
-                item["slot"]["name"]
-                not in ItemModel.model_json_schema()["properties"]["slot"]["enum"]
-            ):
-                base_item["slot"] = " ".join(
-                    [elem.capitalize() for elem in item["slot"]["name"].split("_")]
-                )
-            else:
-                base_item["slot"] = item["slot"]["name"]
-            base_item["quality"] = item["data"]["quality"]["name"]["en_GB"]
+            if item.get("slot", {}).get("name"):
+                if (
+                    item.get("slot", {}).get("name")
+                    not in ItemModel.model_json_schema()["properties"]["slot"]["enum"]
+                ):
+                    base_item["slot"] = " ".join(
+                        [elem.capitalize() for elem in item["slot"]["name"].split("_")]
+                    )
+                else:
+                    base_item["slot"] = item["slot"]["name"]
+            base_item["quality"] = (
+                item["data"].get("quality", {}).get("name", {}).get("en_GB", {})
+            )
             base_item["version"] = self.version
             if item["data"]["item_class"]["id"] == 3:
                 base_item["inventory_type"] = "Gem"
@@ -1076,7 +1078,6 @@ class EnchantmentParser(BlizzardParser):
         return self.parse_search(gem["results"]) if search else [self.parse_gem(gem)]
 
     def fetch_enchant(self, search=None, id=None):
-        print("fetch enchant")
         if search:
             print(
                 f"Trying to fetch enchant '{search}' from blizzard api/{self.get_base_search_url().replace('SEARCH', str(search)).replace('ITEMCLASS', "0")}"
@@ -1122,7 +1123,9 @@ class EnchantmentParser(BlizzardParser):
 
             temp_enchantment: EnchantmentModel = EnchantmentModel().model_dump()
             temp_enchantment["id"] = int(enchantment["id"])
-            temp_enchantment["name"] = enchantment.get("name")
+            temp_enchantment["name"] = (
+                enchantment.get("name").replace("QA", "").replace("Enchant Weapon", "")
+            )
             temp_enchantment["source_id"] = enchantment["id"]
             temp_enchantment["type"] = 2
             temp_enchantment["slot"] = "Other"

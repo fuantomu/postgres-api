@@ -46,7 +46,12 @@ class Enchantment(Router):
                 enchantment_parser = EnchantmentParser(version=version)
                 result = enchantment_parser.fetch_gem(search=search, id=id)
             elif slot == "enchant":
-                enchantment_parser = EnchantmentParser(version=version)
+                if version == "classic":
+                    enchantment_parser = EnchantmentParser(
+                        namespace="1.15.8_63631-classic1x", version=version
+                    )
+                else:
+                    enchantment_parser = EnchantmentParser(version=version)
                 result = enchantment_parser.fetch_enchant(search=search, id=id)
         else:
             result = [
