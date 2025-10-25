@@ -64,7 +64,7 @@ class ZoneRanking(BaseModel):
     bestPerformanceAverage: float | None = None
     medianPerformanceAverage: float | None = None
     difficulty: int
-    metric: Literal["dps", "heal"]
+    metric: Literal["dps", "hps"]
     partition: int
     zone: int
     size: int
