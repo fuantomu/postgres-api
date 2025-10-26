@@ -336,7 +336,7 @@ class CharacterTable(Table):
                     found_glyph = [
                         found_glyph.get(request["version"])
                         for found_glyph in glyphs.values()
-                        if found_glyph.get(request["version"]).get("id") == glyph
+                        if found_glyph.get(request["version"], {}).get("id") == glyph
                     ]
                     if found_glyph:
                         temp_glyph["name"] = found_glyph[0]["name"]
