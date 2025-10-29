@@ -43,7 +43,7 @@ class Item(Router):
                     namespace="1.15.8_63631-classic1x", version=version
                 )
             else:
-                ItemParser(version=version)
+                item_parser = ItemParser(version=version)
             result = item_parser.fetch_search(search=search, id=id, slot=slot)
         else:
             result = [
