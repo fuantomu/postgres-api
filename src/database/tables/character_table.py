@@ -28,7 +28,7 @@ class CharacterTable(Table):
         "race": {"value": "varchar(16)", "default": "'Human'"},
         "character_class": {"value": "varchar(16)", "default": "'Adventurer'"},
         "active_spec": {"value": "varchar(16)", "default": "'Adventurer'"},
-        "guild": {"value": "INTEGER REFERENCES guild(id)"},
+        "guild": {"value": "INTEGER REFERENCES guild(id)", "default": None},
         "level": {"value": "SMALLINT NOT NULL", "default": 1},
         "achievement_points": {"value": "INTEGER NOT NULL", "default": 0},
         "last_login_timestamp": {"value": "BIGINT NOT NULL", "default": 0},
@@ -192,7 +192,7 @@ class CharacterTable(Table):
 
             if character_same_version:
                 if request.get("guild") == -1:
-                    request.pop("guild")
+                    request["guild"] = None
                 self.update(
                     request,
                     [
@@ -206,7 +206,7 @@ class CharacterTable(Table):
                 )
                 return "Success"
         if request["guild"] == -1:
-            request.pop("guild", None)
+            request["guild"] = None
         request.pop("guild_name", None)
 
         self.insert(request, "character")
