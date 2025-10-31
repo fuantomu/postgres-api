@@ -57,15 +57,13 @@ class Server:
             self.app.include_router(value.router, prefix=f"/{key}", tags=[key])
 
     def initialize_database(self):
-        with self.database as d:
-            d.initialize()
+        self.database.initialize()
 
         for _, router in self.routers.items():
             router.database = self.database
 
     def clean_database(self):
-        with self.database as d:
-            d.drop_tables()
+        self.database.drop_tables()
 
     def run(self):
         self.logger.info(f"Running on port {self.port}")

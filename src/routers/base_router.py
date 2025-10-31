@@ -69,10 +69,9 @@ class Router:
         self, _func: str, request: str | dict
     ) -> JSONResponse | Response:
         self.logger.info("Redirecting request to database")
-        with self.database as database:
-            try:
-                result = database.manage_request(_func, self.name, request)
-                return self.return_result(result)
-            except Exception as e:
-                self.logger.exception(e)
-                return JSONResponse({"Result": handle_exception(e)}, 400)
+        try:
+            result = self.database.manage_request(_func, self.name, request)
+            return self.return_result(result)
+        except Exception as e:
+            self.logger.exception(e)
+            return JSONResponse({"Result": handle_exception(e)}, 400)

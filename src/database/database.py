@@ -17,9 +17,6 @@ class Database:
         self.port = port
         self.create_if_not_exists()
         self.logger.debug(f"Creating connection to database '{self.database_name}'")
-
-    def __enter__(self):
-        self.logger.info("Opening connection to database")
         self.connection = psycopg.connect(
             host=self.host,
             port=self.port,
@@ -28,14 +25,6 @@ class Database:
             password=self.password,
             connect_timeout=5,
         )
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.logger.info("Closing connection to database")
-        self.connection.close()
-        if exc_type is not None:
-            raise
-        return True
 
     def initialize(self) -> None:
         self.logger.info("Initializing database")
