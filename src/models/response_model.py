@@ -1,5 +1,6 @@
 from typing import List
 from pydantic import BaseModel
+from src.models.account import AccountLoginSessionModel, AccountModel, SessionModel
 from src.models.character import (
     CharacterEquipmentModel,
     CharacterModel,
@@ -13,6 +14,7 @@ from src.models.wcl import RankingModel, ZoneModel
 
 class BaseResponseModel(BaseModel):
     Result: str
+    status_code: int | None = None
 
 
 class CharacterResponseModel(BaseModel):
@@ -53,3 +55,15 @@ class RankingResponseModel(BaseModel):
 
 class ZoneResponseModel(BaseModel):
     Result: ZoneModel
+
+
+class AccountResponseModel(BaseModel):
+    Result: AccountModel
+
+
+class AccountLoginResponseModel(BaseModel):
+    Result: AccountLoginSessionModel
+
+
+class SessionResponseModel(BaseModel):
+    Result: SessionModel

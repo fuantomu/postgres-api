@@ -10,6 +10,8 @@ class Table:
     columns = {}
     functions = {}
 
+    sessions: dict[int] = {}
+
     def __init__(self, connection: psycopg.Connection, name: str):
         self.connection = connection
         self.name = name.lower()

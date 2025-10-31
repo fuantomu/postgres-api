@@ -79,7 +79,7 @@ class GuildTable(Table):
                 return "Success"
         request["id"] = self.select("MAX(id)", [], "guild")[0][0] + 1
         if request["created_timestamp"] == 0:
-            request["created_timestamp"] = datetime.now().timestamp() * 1000
+            request["created_timestamp"] = datetime.now(timezone.utc).timestamp()
         self.insert(request, "guild")
         return f"{request['id']}"
 
@@ -107,12 +107,14 @@ class GuildTable(Table):
             else:
                 request["id"] = self.select("MAX(id)", [], "guild")[0][0] + 1
                 if request["created_timestamp"] == 0:
-                    request["created_timestamp"] = datetime.now().timestamp() * 1000
+                    request["created_timestamp"] = datetime.now(
+                        timezone.utc
+                    ).timestamp()
                 self.insert(request, "guild")
                 return f"{request['id']}"
         else:
             if request["created_timestamp"] == 0:
-                request["created_timestamp"] = datetime.now().timestamp() * 1000
+                request["created_timestamp"] = datetime.now(timezone.utc).timestamp()
             self.insert(request, "guild")
             return f"{request['id']}"
         return "Success"
