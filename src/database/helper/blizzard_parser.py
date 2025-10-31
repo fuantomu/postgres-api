@@ -766,11 +766,19 @@ class ItemParser(BlizzardParser):
         item_model["wowhead_link"] = item["link"]
         item_model["icon"] = icon["icon"]
         item_model["inventory_type"] = item["inventory_type"]["name"]
-        item_model["enchantment"] = None
+        item_model["enchantment"] = ""
         if item.get("enchants"):
-            item_model["enchantment"] = "##".join(
-                [enchant["display_string"] for enchant in item["enchants"]]
-            )
+            for idx, enchant in enumerate(item["enchants"]):
+                if (
+                    enchant.get("display_string", enchant["name"])
+                    and enchant.get("display_string", enchant["name"])
+                    not in item_model["enchantment"]
+                ):
+                    item_model["enchantment"] += enchant.get(
+                        "display_string", enchant["name"]
+                    )
+                    if idx < len(item["enchants"]):
+                        item_model["enchantment"] += "##"
         item_model["version"] = self.version.lower()
 
         return item_model
@@ -1126,6 +1134,7 @@ class EnchantmentParser(BlizzardParser):
             temp_enchantment["name"] = (
                 enchantment.get("name").replace("QA", "").replace("Enchant Weapon", "")
             )
+            temp_enchantment["display_string"] = temp_enchantment["name"]
             temp_enchantment["source_id"] = enchantment["id"]
             temp_enchantment["type"] = 2
             temp_enchantment["slot"] = "Other"
