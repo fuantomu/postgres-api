@@ -979,7 +979,7 @@ class GlyphParser(WowheadParser):
 
     def find_class_glyphs(self, class_name: str):
         response = requests.get(
-            f"{self.url}/spells/glyphs/{self.get_class_name(class_name)}"
+            f"{self.url}spells/glyphs/{self.get_class_name(class_name)}"
         )
 
         import re
