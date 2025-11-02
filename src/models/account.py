@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import BaseModel
 
 
@@ -10,6 +11,7 @@ class AccountModel(AccountLoginModel):
     level: int = 0
     guild: int | None = None
     creation_time: int = 0
+    characters: List[int] = []
 
 
 class AccountLoginSessionModel(BaseModel):

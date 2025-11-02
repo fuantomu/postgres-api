@@ -45,6 +45,7 @@ class Table:
         with self.connection.cursor() as cursor:
             cursor.execute(
                 f"""
+            CREATE EXTENSION IF NOT EXISTS citext;
             CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
             CREATE TABLE IF NOT EXISTS {self.name} ({generate_statement(self.columns)});
             """

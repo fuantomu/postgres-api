@@ -5,12 +5,14 @@ from .characteritem_table import CharacterItemTable
 from .characterspec_table import CharacterSpecTable
 from .characterstat_table import CharacterStatTable
 from .account_table import AccountTable
+from .account_character_table import AccountCharacterTable
 
 
 __all__ = [
-    "account",
     "guild",
+    "account",
     "character",
+    "accountcharacter",
     "characteritem",
     "characterspec",
     "characterstat",

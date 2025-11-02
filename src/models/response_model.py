@@ -58,7 +58,7 @@ class ZoneResponseModel(BaseModel):
 
 
 class AccountResponseModel(BaseModel):
-    Result: AccountModel
+    Result: AccountModel | List[AccountModel]
 
 
 class AccountLoginResponseModel(BaseModel):
@@ -67,3 +67,7 @@ class AccountLoginResponseModel(BaseModel):
 
 class SessionResponseModel(BaseModel):
     Result: SessionModel
+
+
+class AccountCharactersResponseModel(BaseModel):
+    Result: List[int]
