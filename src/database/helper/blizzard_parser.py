@@ -643,11 +643,10 @@ class ItemParser(BlizzardParser):
                         print(f"Enchant {enchant} is missing")
                         save_enchant(enchant, self.version, slot_name)
 
-                filtered = [
-                    enchantments[enchant][self.version]
-                    for enchant in enchantments
-                    if enchantments[enchant].get(self.version)
-                    and any(
+                filtered = []
+                added_ids = []
+                for enchant in enchantments:
+                    if enchantments[enchant].get(self.version) and any(
                         enchantments[enchant][self.version]["id"]
                         == item_enchant["enchantment_id"]
                         and (
@@ -657,9 +656,11 @@ class ItemParser(BlizzardParser):
                                 and self.version == "classic"
                             )
                         )
+                        and enchantments[enchant][self.version]["id"] not in added_ids
                         for item_enchant in item["enchantments"]
-                    )
-                ]
+                    ):
+                        added_ids.append(enchantments[enchant][self.version]["id"])
+                        filtered.append(enchantments[enchant][self.version])
                 item["enchants"] = filtered
                 if len(filtered) > 0:
                     item["link"] += ":".join(str(entry["id"]) for entry in filtered)
