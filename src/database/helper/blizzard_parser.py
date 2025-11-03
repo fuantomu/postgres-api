@@ -1066,7 +1066,7 @@ class EnchantmentParser(BlizzardParser):
     def fetch_gem(self, search=None, id=None):
         if search:
             print(
-                f"Trying to fetch gem '{search}' from blizzard api/{self.get_base_search_url().replace('SEARCH', str(search)).replace('ITEMCLASS', "3")}"
+                f"Trying to fetch gem '{search}' from blizzard api/{self.get_base_search_url().replace('SEARCH', str(search)).replace('ITEMCLASS', '3')}"
             )
             gem: dict = requests.get(
                 self.get_base_search_url()
@@ -1089,7 +1089,7 @@ class EnchantmentParser(BlizzardParser):
     def fetch_enchant(self, search=None, id=None):
         if search:
             print(
-                f"Trying to fetch enchant '{search}' from blizzard api/{self.get_base_search_url().replace('SEARCH', str(search)).replace('ITEMCLASS', "0")}"
+                f"Trying to fetch enchant '{search}' from blizzard api/{self.get_base_search_url().replace('SEARCH', str(search)).replace('ITEMCLASS', '0')}"
             )
             enchant: dict = requests.get(
                 self.get_base_search_url()

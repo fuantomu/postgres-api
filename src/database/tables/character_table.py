@@ -180,7 +180,7 @@ class CharacterTable(Table):
         self.logger.debug(f"AddOrUpdate {self.name}: {request}")
         if not request.get("id"):
             request["id"] = self.select("MAX(id)", [], "character")[0][0] + 1
-        query = f"select id,version from character where (id = '{request['id']}' or name = '{request['name']}') and region = '{request["region"]}' and realm = '{request['realm']}'"
+        query = f"select id,version from character where (id = '{request['id']}' or name = '{request['name']}') and region = '{request['region']}' and realm = '{request['realm']}'"
         found_item = self.select_query(query)
 
         if found_item:
@@ -466,7 +466,7 @@ class CharacterTable(Table):
 
     def post(self, request):
         self.logger.debug(f"Post {self.name}: {request}")
-        query = f"select id from character where (id = '{request['id']}' and name != '{request['name']}') and region = '{request["region"]}' and realm = '{request['realm']}'"
+        query = f"select id from character where (id = '{request['id']}' and name != '{request['name']}') and region = '{request['region']}' and realm = '{request['realm']}'"
         result = self.select_query(query)
 
         # Character name was changed

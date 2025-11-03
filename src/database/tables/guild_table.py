@@ -57,7 +57,7 @@ class GuildTable(Table):
         return super().delete_entry(request)
 
     def add_or_update(self, request):
-        query = f"select id,version from guild where (id = '{request['id']}' or name = '{request['name']}') and region = '{request["region"]}' and realm = '{request['realm']}'"
+        query = f"select id,version from guild where (id = '{request['id']}' or name = '{request['name']}') and region = '{request['region']}' and realm = '{request['realm']}'"
         found_item = self.select_query(query)
 
         if found_item:
