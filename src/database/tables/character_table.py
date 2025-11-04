@@ -193,6 +193,7 @@ class CharacterTable(Table):
             if character_same_version:
                 if request.get("guild") == -1:
                     request["guild"] = None
+                request.pop("guild_name", None)
                 self.update(
                     request,
                     [
@@ -205,8 +206,19 @@ class CharacterTable(Table):
                     "character",
                 )
                 return "Success"
-        if request["guild"] == -1:
+        if request.get("guild") == -1:
             request["guild"] = None
+        elif request.get("guild"):
+            found_guild = self.select("id", [("id", "=", request["guild"])], "guild")
+            if not found_guild:
+                guild_parser = GuildParser(
+                    request["guild_name"],
+                    request["realm"],
+                    region=request["region"],
+                    version=request["version"],
+                )
+                guild = guild_parser.get_guild()
+                GuildTable.add_or_update(self, guild)
         request.pop("guild_name", None)
 
         self.insert(request, "character")
@@ -449,6 +461,7 @@ class CharacterTable(Table):
             talent["id"] = existing_player["id"]
             talent["version"] = version
             talent["talents"] = str(talent["talents"])
+            talent["name"] = f"{existing_player['character_class']}{talent['name']}"
             CharacterSpecTable.add_or_update(self, talent)
 
         stats = character_parser.get_statistics()

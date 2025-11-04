@@ -4,6 +4,7 @@ from src.models.account import AccountLoginSessionModel, AccountModel, SessionMo
 from src.models.character import (
     CharacterEquipmentModel,
     CharacterModel,
+    CharacterSearchModel,
     CharacterStatisticModel,
 )
 from src.models.guild import GuildModel
@@ -31,6 +32,10 @@ class CharacterSpecializationResponseModel(BaseModel):
 
 class CharacterStatisticResponseModel(BaseModel):
     Result: CharacterStatisticModel
+
+
+class CharacterSearchResponseModel(BaseModel):
+    Result: CharacterSearchModel
 
 
 class GuildResponseModel(BaseModel):

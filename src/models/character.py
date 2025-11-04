@@ -52,6 +52,10 @@ class CharacterModel(BaseModel):
     realm_version: Literal["classic", "vanilla", "fresh", "sod", "retail"] = "classic"
 
 
+class CharacterSearchModel(CharacterModel):
+    guild_name: str | None = None
+
+
 class CharacterEquipmentModel(BaseModel):
     head: ItemModel | None = None
     neck: ItemModel | None = None

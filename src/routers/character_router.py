@@ -1,12 +1,16 @@
+from fastapi.responses import JSONResponse
+from src.database.helper.blizzard_parser import CharacterParser
 from src.models.character import (
     CharacterEquipmentModel,
     CharacterModel,
     CharacterParseModel,
+    CharacterSearchModel,
 )
 from src.models.response_model import (
     BaseResponseModel,
     CharacterEquipmentResponseModel,
     CharacterResponseModel,
+    CharacterSearchResponseModel,
     CharacterSpecializationResponseModel,
     CharacterStatisticResponseModel,
 )
@@ -81,8 +85,17 @@ class Character(Router):
             response_model=CharacterStatisticResponseModel,
             responses={400: {"model": BaseResponseModel}},
         )
+        self.router.add_api_route(
+            "/Search",
+            self.search_character,
+            methods=["GET"],
+            status_code=201,
+            summary="Search for a character profile",
+            response_model=CharacterSearchResponseModel,
+            responses={400: {"model": BaseResponseModel}},
+        )
 
-    async def post(self, character: CharacterModel):
+    async def post(self, character: CharacterModel | CharacterSearchModel):
         self.logger.info(f"Received POST request on {self.name}")
         self.logger.debug(f"Parameters: {character}")
         request = character.model_dump()
@@ -239,3 +252,14 @@ class Character(Router):
                 "version": version,
             },
         )
+
+    def search_character(
+        self, name: str, realm: str, region: str, version: str = "mop"
+    ):
+        self.logger.info(f"Received GET request on {self.name}")
+        self.logger.debug(f"Parameters: {name},{realm},{region}")
+        character_parser = CharacterParser(name, realm, region=region, version=version)
+        result = character_parser.get_character()
+        if result.get("error"):
+            return JSONResponse(self.return_result(result["error"]), 404)
+        return self.return_result(result)

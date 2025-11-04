@@ -77,7 +77,8 @@ class GuildTable(Table):
                     "guild",
                 )
                 return "Success"
-        request["id"] = self.select("MAX(id)", [], "guild")[0][0] + 1
+        if request.get("id", -1) == -1:
+            request["id"] = self.select("MAX(id)", [], "guild")[0][0] + 1
         if request["created_timestamp"] == 0:
             request["created_timestamp"] = datetime.now(timezone.utc).timestamp()
         self.insert(request, "guild")

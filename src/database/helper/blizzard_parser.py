@@ -232,9 +232,15 @@ class CharacterParser(BlizzardParser):
 
         for specialization in specializations.get("specializations", []):
             current_spec = SpecializationModel().model_dump()
-            current_spec["name"] = (
-                specialization["specialization_name"].replace(" ", "").capitalize()
-            )
+            if player_class:
+                current_spec["name"] = (
+                    f'{player_class.capitalize}{specialization["specialization_name"].replace(" ", "").capitalize()}'
+                )
+            else:
+                current_spec["name"] = (
+                    specialization["specialization_name"].replace(" ", "").capitalize()
+                )
+
             current_spec["talents"] = []
 
             for talent in specialization.get("talents", []):
@@ -748,7 +754,10 @@ class ItemParser(BlizzardParser):
             "item",
             namespace=get_namespace(item["item"]["key"]["href"]) or self.namespace,
         )
-        icon = iconparser.get_icon()
+        try:
+            icon = iconparser.get_icon()
+        except Exception:
+            icon = {"icon": "Undefined"}
 
         item_model = ItemModel().model_dump()
         item_model["id"] = item["item"]["id"]
@@ -1322,17 +1331,17 @@ if __name__ == "__main__":
     # )
     # print(test.get_character())
     # print(test.get_sorted_equipment())
-    # print(test.get_talents(player_class="Druid"))
+    # print(test.get_talents(player_class="Paladin"))
     # test2 = CharacterParser("Zoo", "nazgrim", namespace="classic", region="us")
     # print(test2.get_talents())
-    test3 = CharacterParser(
-        "Xippm",
-        "Crusader Strike",
-        region="us",
-        version="classic",
-    )
+    # test3 = CharacterParser(
+    #     "Xippm",
+    #     "Crusader Strike",
+    #     region="us",
+    #     version="classic",
+    # )
     # print(test3.get_character())
-    print(test3.get_sorted_equipment())
+    # print(test3.get_sorted_equipment())
     # print(test3.get_talents())
     # print(test3.get_statistics())
     # test4 = ItemParser(region="eu", version="mop")
