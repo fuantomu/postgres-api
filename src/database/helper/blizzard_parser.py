@@ -8,7 +8,7 @@ from src.models.character import (
     CharacterStatisticModel,
     RatingModel,
 )
-from src.models.guild import GuildModel
+from src.models.guild import GuildModel, GuildRosterModel
 from src.models.icon import IconModel
 from src.models.item import EnchantmentModel, ItemModel
 from src.models.specialization import GlyphModel, SpecializationModel
@@ -69,6 +69,37 @@ class_enum = {
     "Warlock": 256,
     "Monk": 512,
     "Druid": 1024,
+}
+
+playable_class = {
+    1: "Warrior",
+    2: "Paladin",
+    3: "Hunter",
+    4: "Rogue",
+    5: "Priest",
+    6: "Deathknight",
+    7: "Shaman",
+    8: "Mage",
+    9: "Warlock",
+    10: "Monk",
+    11: "Druid",
+}
+
+playable_race = {
+    1: "Human",
+    2: "Orc",
+    3: "Dwarf",
+    4: "Nightelf",
+    5: "Undead",
+    6: "Tauren",
+    7: "Gnome",
+    8: "Troll",
+    9: "Goblin",
+    10: "Bloodelf",
+    11: "Draenei",
+    22: "Worgen",
+    25: "Pandaren",
+    26: "Pandaren",
 }
 
 SEARCH_LIMIT = 10
@@ -418,7 +449,7 @@ class GuildParser(BlizzardParser):
         super().__init__(namespace, region, version, token)
         self.guild = guild.replace(" ", "-")
         self.realm = realm = realm.replace(" ", "-")
-        self.base_url = "https://REGION.api.blizzard.com/data/wow/guild/REALM/GUILDNAME?namespace=profile-NAMESPACE-REGION&locale=en_GB&access_token="
+        self.base_url = "https://REGION.api.blizzard.com/data/wow/guild/REALM/GUILDNAME/TYPE?namespace=profile-NAMESPACE-REGION&locale=en_GB&access_token="
 
     def get_base_url(self, url_type=""):
         return (
@@ -449,6 +480,28 @@ class GuildParser(BlizzardParser):
         guild_template["version"] = self.version.lower()
 
         return guild_template
+
+    def get_roster(self):
+        roster = requests.get(
+            self.get_base_url("roster"),
+            headers=self.headers,
+        ).json()
+
+        out = []
+        for member in roster.get("members", []):
+            member_template = GuildRosterModel().model_dump()
+            member_template["id"] = member["character"]["id"]
+            member_template["name"] = member["character"]["name"]
+            member_template["level"] = member["character"]["level"]
+            member_template["rank"] = member["rank"]
+            member_template["race"] = playable_race[
+                member["character"]["playable_race"]["id"]
+            ]
+            member_template["character_class"] = playable_class[
+                member["character"]["playable_class"]["id"]
+            ]
+            out.append(member_template)
+        return out
 
 
 class IconParser(BlizzardParser):
@@ -1355,3 +1408,6 @@ if __name__ == "__main__":
     # print(out)
     # out2 = test6.fetch_enchant(search="dancing steel")
     # print(out2)
+    test7 = GuildParser("prey gdkp", "everlook", region="eu", version="mop")
+    out = test7.get_roster()
+    print(out)

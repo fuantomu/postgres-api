@@ -1,0 +1,52 @@
+query{
+    guildData {
+        guild(name:"$NAME", serverSlug:"$SERVER", serverRegion:"$REGION") {
+            name,
+            id,
+            zoneRanking{
+                progress{
+                    worldRank{
+                        number,
+                        color,
+                    },
+                    regionRank{
+                        number,
+                        color,
+                    },
+                    serverRank{
+                        number,
+                        color,
+                    },
+                },
+                speed{
+                    worldRank{
+                        number,
+                        color,
+                    },
+                    regionRank{
+                        number,
+                        color,
+                    },
+                    serverRank{
+                        number,
+                        color,
+                    },
+                },
+                completeRaidSpeed{
+                    worldRank{
+                        number,
+                        color,
+                    },
+                    regionRank{
+                        number,
+                        color,
+                    },
+                    serverRank{
+                        number,
+                        color,
+                    }
+                }
+            }
+        }
+    }
+}

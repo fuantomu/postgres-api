@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from src.database.helper.wcl_parser import WCLParser
 from src.models.response_model import (
     BaseResponseModel,
+    GuildRankingResponseModel,
     RankingResponseModel,
     ZoneResponseModel,
 )
@@ -28,6 +29,14 @@ class Warcraftlogs(Router):
             methods=["GET"],
             status_code=201,
             summary="Get zone information for the specified id",
+            responses={400: {"model": BaseResponseModel}},
+        )
+        self.router.add_api_route(
+            "/Guild",
+            self.get_guild_ranking,
+            methods=["GET"],
+            status_code=201,
+            summary="Get the current ranking for the specified guild",
             responses={400: {"model": BaseResponseModel}},
         )
 
@@ -65,4 +74,25 @@ class Warcraftlogs(Router):
         result = wcl_parser.get_zone(zone)
         if not result:
             return self.return_result("Zone not found")
+        return self.return_result(result)
+
+    def get_guild_ranking(
+        self,
+        guild: str,
+        server: str,
+        region: str,
+        wcl_version: str = "classic",
+    ) -> GuildRankingResponseModel | BaseResponseModel:
+        self.logger.info(f"Received GET-Ranking request on {self.name}")
+        self.logger.debug(
+            f"guild: {guild}, server: {server}, region: {region}, wcl_version: {wcl_version}"
+        )
+        if wcl_version:
+            wcl_version = wcl_version.lower()
+        if region:
+            region = region.lower()
+        wcl_parser = WCLParser(wcl_version)
+        result = wcl_parser.get_guild(guild, server, region)
+        if not result:
+            return self.return_result("Guild not found")
         return self.return_result(result)

@@ -66,11 +66,29 @@ class WCLParser:
                 f.write(f"zones = {str(zones)}")
             return zones[zone]
 
+    def get_guild(self, character: str, server: str, region: str):
+        body = (
+            self.get_schema("guild")
+            .replace("$NAME", character)
+            .replace("$SERVER", server)
+            .replace("$REGION", region)
+        )
+        result = requests.get(
+            self.endpoint,
+            json={"query": body},
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        if result.status_code != 200:
+            raise Exception(result.text)
+        else:
+            return result.json()["data"]["guildData"]["guild"]
+
 
 if __name__ == "__main__":
     load_dotenv(".env")
     load_dotenv(".env.local", override=True)
     test = WCLParser("classic")
     # out = test.get_character("heavenstamp", "everlook", "eu")
-    out = test.get_zone(1039)
+    # out = test.get_zone(1039)
+    out = test.get_guild("envy", "everlook", "eu")
     print(out)

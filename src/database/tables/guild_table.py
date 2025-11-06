@@ -53,6 +53,16 @@ class GuildTable(Table):
             raise Exception(
                 f"No guild found for {request['key']} '{request['value']}' in '{request['version']}'"
             )
+        # Clear all references from characters
+        self.update(
+            {"guild": None},
+            [
+                ("guild", "=", request["value"]),
+                ("version", "=", request["version"]),
+                "AND",
+            ],
+            "character",
+        )
 
         return super().delete_entry(request)
 
@@ -69,56 +79,19 @@ class GuildTable(Table):
                 self.update(
                     request,
                     [
-                        ("name", "=", request["name"]),
-                        ("realm", "=", request["realm"]),
+                        ("id", "=", request["id"]),
                         ("version", "=", request["version"]),
                         "AND",
                     ],
                     "guild",
                 )
                 return "Success"
-        if request.get("id", -1) == -1:
+        if request.get("id", 0) == 0:
             request["id"] = self.select("MAX(id)", [], "guild")[0][0] + 1
         if request["created_timestamp"] == 0:
             request["created_timestamp"] = datetime.now(timezone.utc).timestamp()
         self.insert(request, "guild")
         return f"{request['id']}"
-
-        # found_item = self.select(
-        #     ["id", "version"],
-        #     [
-        #         ("name", "=", request["name"]),
-        #         ("realm", "=", request["realm"]),
-        #         "AND",
-        #     ],
-        #     "guild",
-        # )
-        if found_item:
-            if found_item[0][1] == request["version"]:
-                self.update(
-                    request,
-                    [
-                        ("name", "=", request["name"]),
-                        ("realm", "=", request["realm"]),
-                        ("version", "=", request["version"]),
-                        "AND",
-                    ],
-                    "guild",
-                )
-            else:
-                request["id"] = self.select("MAX(id)", [], "guild")[0][0] + 1
-                if request["created_timestamp"] == 0:
-                    request["created_timestamp"] = datetime.now(
-                        timezone.utc
-                    ).timestamp()
-                self.insert(request, "guild")
-                return f"{request['id']}"
-        else:
-            if request["created_timestamp"] == 0:
-                request["created_timestamp"] = datetime.now(timezone.utc).timestamp()
-            self.insert(request, "guild")
-            return f"{request['id']}"
-        return "Success"
 
     def update_functions(self):
         self.logger.debug(f"Updating function calls for {self.name}")

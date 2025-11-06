@@ -105,3 +105,26 @@ class ZoneModel(BaseModel):
     expansion: NameModel
     frozen: bool
     name: str
+
+
+class SimpleRankingModel(BaseModel):
+    number: int
+    color: str | None = None
+
+
+class GuildZoneRankTypeModel(BaseModel):
+    worldRank: SimpleRankingModel | None
+    regionRank: SimpleRankingModel | None
+    serverRank: SimpleRankingModel | None
+
+
+class GuildZoneRankingModel(BaseModel):
+    progress: GuildZoneRankTypeModel | None
+    speed: GuildZoneRankTypeModel | None
+    completeRaidSpeed: GuildZoneRankTypeModel | None
+
+
+class GuildRankingModel(BaseModel):
+    name: str
+    id: int
+    zoneRanking: GuildZoneRankingModel

@@ -7,10 +7,10 @@ from src.models.character import (
     CharacterSearchModel,
     CharacterStatisticModel,
 )
-from src.models.guild import GuildModel
+from src.models.guild import GuildModel, GuildRosterModel
 from src.models.item import EnchantmentModel, ItemModel
 from src.models.specialization import GlyphModel, SpecializationModel
-from src.models.wcl import RankingModel, ZoneModel
+from src.models.wcl import GuildRankingModel, RankingModel, ZoneModel
 
 
 class BaseResponseModel(BaseModel):
@@ -42,6 +42,14 @@ class GuildResponseModel(BaseModel):
     Result: GuildModel | List[GuildModel]
 
 
+class GuildSearchResponseModel(BaseModel):
+    Result: GuildModel
+
+
+class GuildRosterResponseModel(BaseModel):
+    Result: List[GuildRosterModel]
+
+
 class ItemResponseModel(BaseModel):
     Result: List[ItemModel]
 
@@ -56,6 +64,10 @@ class EnchantmentResponseModel(BaseModel):
 
 class RankingResponseModel(BaseModel):
     Result: RankingModel
+
+
+class GuildRankingResponseModel(BaseModel):
+    Result: GuildRankingModel
 
 
 class ZoneResponseModel(BaseModel):
